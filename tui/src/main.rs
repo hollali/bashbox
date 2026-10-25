@@ -1,7 +1,7 @@
 mod tasks;
 mod themes;
 
-use std::io;
+use std::io::{self, Write};
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
@@ -369,10 +369,12 @@ fn centered_rect(area: Rect, w: u16, h: u16) -> Rect {
 }
 
 fn print_list(tasks: &[Task]) {
+    let stdout = io::stdout();
+    let mut out = io::BufWriter::new(stdout.lock());
     for (tab, name) in TABS.iter().enumerate() {
-        println!("== {} ==", name);
+        let _ = writeln!(out, "== {} ==", name);
         for t in tasks.iter().filter(|t| t.tab == tab) {
-            println!("  {}\n      {}", t.name, t.desc);
+            let _ = writeln!(out, "  {}\n      {}", t.name, t.desc);
         }
     }
 }

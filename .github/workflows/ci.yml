@@ -56,7 +56,7 @@ jobs:
         run: cargo build --locked --release
 
       - name: Smoke test
-        run: ./target/release/mybash --list
+        run: ./target/release/bashbox --list
 
   smoke-test:
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
           TERM: xterm-256color
         run: |
           test -L "$HOME/.bashrc"
-          test -e "$HOME/.bashrc.mybash-backup"
+          test -e "$HOME/.bashrc.bashbox-backup"
           bash -ic "echo BASHRC_PROMPT_OK" 2>&1 | grep -q BASHRC_PROMPT_OK
 
       - name: Uninstall and restore
@@ -107,5 +107,5 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: tui/target/release/mybash
+          files: tui/target/release/bashbox
           generate_release_notes: true

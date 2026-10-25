@@ -153,19 +153,19 @@ pub fn build() -> Vec<Task> {
         },
         Task {
             name: "Refresh dotfiles",
-            desc: "Re-links ~/.bashrc, starship.toml and the fastfetch config from ~/.local/share/mybash.",
+            desc: "Re-links ~/.bashrc, starship.toml and the fastfetch config from ~/.local/share/bashbox.",
             tab: 1,
             action: Action::Builtin(Builtin::Refresh),
         },
         Task {
-            name: "Uninstall mybash",
-            desc: "Restores your .mybash-backup files and removes mybash config copies and font installs.",
+            name: "Uninstall bashbox",
+            desc: "Restores your .bashbox-backup files and removes bashbox config copies and font installs.",
             tab: 1,
             action: Action::Builtin(Builtin::Uninstall),
         },
         Task {
             name: "Toggle fastfetch banner",
-            desc: "Adds or removes MYBASH_NO_FETCH=1 in ~/.bashrc to turn the startup banner off or on.",
+            desc: "Adds or removes BASHBOX_NO_FETCH=1 in ~/.bashrc to turn the startup banner off or on.",
             tab: 1,
             action: Action::Builtin(Builtin::ToggleBanner),
         },
@@ -189,7 +189,7 @@ pub fn build() -> Vec<Task> {
         },
         Task {
             name: "Run doctor",
-            desc: "Checks all mybash dependencies, config links, and fonts, and reports what is missing.",
+            desc: "Checks all bashbox dependencies, config links, and fonts, and reports what is missing.",
             tab: 3,
             action: Action::Builtin(Builtin::Doctor),
         },
@@ -284,7 +284,7 @@ fn home_dir() -> Option<PathBuf> {
 
 fn backup_path(dest: &Path) -> PathBuf {
     let name = dest.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    dest.with_file_name(format!("{}.mybash-backup", name))
+    dest.with_file_name(format!("{}.bashbox-backup", name))
 }
 
 fn link(src: &Path, dest: &Path, send: &impl Fn(String)) {
@@ -314,10 +314,10 @@ fn refresh<F: Fn(String)>(send: &F) {
             return;
         }
     };
-    let install = home.join(".local/share/mybash");
+    let install = home.join(".local/share/bashbox");
     if !install.join(".bashrc").exists() {
         send(
-            "mybash is not installed yet (~/.local/share/mybash missing). Run setup.sh first."
+            "bashbox is not installed yet (~/.local/share/bashbox missing). Run setup.sh first."
                 .to_string(),
         );
         return;
@@ -353,7 +353,7 @@ fn restore(dest: &Path, send: &impl Fn(String)) {
         }
     } else if dest.exists() {
         send(format!(
-            "{} is not managed by mybash, skipped",
+            "{} is not managed by bashbox, skipped",
             dest.display()
         ));
     }
@@ -370,7 +370,7 @@ fn uninstall<F: Fn(String)>(send: &F) {
     restore(&home.join(".bashrc"), send);
     restore(&home.join(".config/starship.toml"), send);
     restore(&home.join(".config/fastfetch/config.jsonc"), send);
-    let install = home.join(".local/share/mybash");
+    let install = home.join(".local/share/bashbox");
     if fs::remove_dir_all(&install).is_ok() {
         send(format!("Removed {}", install.display()));
     }
@@ -394,22 +394,24 @@ fn toggle_banner<F: Fn(String)>(send: &F) {
     let rc = home.join(".bashrc");
     match fs::read_to_string(&rc) {
         Ok(content) => {
-            if content.lines().any(|l| l.contains("MYBASH_NO_FETCH=1")) {
+            if content.lines().any(|l| l.contains("BASHBOX_NO_FETCH=1")) {
                 let out: String = content
                     .lines()
-                    .filter(|l| !l.contains("MYBASH_NO_FETCH=1"))
+                    .filter(|l| !l.contains("BASHBOX_NO_FETCH=1"))
                     .collect::<Vec<_>>()
                     .join("\n")
                     + "\n";
                 let _ = fs::write(&rc, out);
                 send(
-                    "Fastfetch banner enabled (removed MYBASH_NO_FETCH from .bashrc).".to_string(),
+                    "Fastfetch banner enabled (removed BASHBOX_NO_FETCH from .bashrc).".to_string(),
                 );
             } else {
                 let out =
-                    content.trim_end_matches('\n').to_string() + "\nexport MYBASH_NO_FETCH=1\n";
+                    content.trim_end_matches('\n').to_string() + "\nexport BASHBOX_NO_FETCH=1\n";
                 let _ = fs::write(&rc, out);
-                send("Fastfetch banner disabled (MYBASH_NO_FETCH=1 added to .bashrc).".to_string());
+                send(
+                    "Fastfetch banner disabled (BASHBOX_NO_FETCH=1 added to .bashrc).".to_string(),
+                );
             }
         }
         Err(e) => send(format!("Could not read .bashrc: {}", e)),
@@ -417,7 +419,7 @@ fn toggle_banner<F: Fn(String)>(send: &F) {
 }
 
 fn doctor<F: Fn(String)>(send: &F) {
-    send("mybash doctor".to_string());
+    send("bashbox doctor".to_string());
     send(String::new());
     let tools = [
         ("prompt", "starship"),
@@ -450,7 +452,7 @@ fn doctor<F: Fn(String)>(send: &F) {
             ),
             (
                 "dotfiles copy",
-                home.join(".local/share/mybash/.bashrc"),
+                home.join(".local/share/bashbox/.bashrc"),
                 true,
             ),
         ];
@@ -458,7 +460,7 @@ fn doctor<F: Fn(String)>(send: &F) {
             match fs::symlink_metadata(&path) {
                 Ok(md) if md.is_symlink() => send(format!("[ok]   {} linked", label)),
                 Ok(_) => send(format!(
-                    "[warn] {} exists but is not a mybash symlink",
+                    "[warn] {} exists but is not a bashbox symlink",
                     label
                 )),
                 Err(_) => send(format!("[miss] {} not found", label)),

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_DIR="$HOME/.local/share/mybash"
+INSTALL_DIR="$HOME/.local/share/bashbox"
 NERD_FONTS=("JetBrainsMono" "FiraCode" "CascadiaCode" "Hack")
-BACKUP_SUFFIX=".mybash-backup"
+BACKUP_SUFFIX=".bashbox-backup"
 
 restore() {
   local dest="$1"

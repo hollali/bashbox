@@ -1,8 +1,8 @@
 [package]
-name = "mybash"
+name = "bashbox"
 version = "0.1.0"
 edition = "2021"
-description = "mybash toolbox - a terminal UI for everyday Linux tasks"
+description = "bashbox toolbox - a terminal UI for everyday Linux tasks"
 license = "MIT"
 
 [dependencies]

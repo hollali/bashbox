@@ -2,9 +2,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_DIR="$HOME/.local/share/mybash"
+INSTALL_DIR="$HOME/.local/share/bashbox"
 NERD_FONTS=("JetBrainsMono" "FiraCode" "CascadiaCode" "Hack")
-BACKUP_SUFFIX=".mybash-backup"
+BACKUP_SUFFIX=".bashbox-backup"
 
 info() { echo "[*] $*"; }
 warn() { echo "[!] $*" >&2; }

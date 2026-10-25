@@ -1,4 +1,4 @@
-# ~/.bashrc - MyBash (custom edition)
+# ~/.bashrc - BashBox (custom edition)
 # shellcheck shell=bash
 
 # Only run in interactive shells
@@ -109,7 +109,7 @@ fi
 if command -v starship >/dev/null 2>&1; then eval "$(starship init bash)"; fi
 
 # ---------- Fastfetch banner ----------
-# Turn it off with: export MYBASH_NO_FETCH=1
-if command -v fastfetch >/dev/null 2>&1 && [ -z "${MYBASH_NO_FETCH:-}" ] && [ "${TERM_PROGRAM:-}" != "vscode" ]; then
+# Turn it off with: export BASHBOX_NO_FETCH=1
+if command -v fastfetch >/dev/null 2>&1 && [ -z "${BASHBOX_NO_FETCH:-}" ] && [ "${TERM_PROGRAM:-}" != "vscode" ]; then
   fastfetch
 fi
