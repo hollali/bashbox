@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck setup.sh uninstall.sh .bashrc
+
+      - name: Validate config files
+        run: |
+          python3 - <<'EOF'
+          import json, tomllib
+          with open('starship.toml', 'rb') as f:
+              tomllib.load(f)
+          print('starship.toml: valid TOML')
+          with open('fastfetch/config.jsonc') as f:
+              json.load(f)
+          print('fastfetch/config.jsonc: valid JSON')
+          EOF
+
+  smoke-test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run setup.sh
+        run: |
+          ./setup.sh && echo "=== SETUP OK ==="
+
+      - name: Verify interactive shell
+        env:
+          TERM: xterm-256color
+        run: |
+          test -L "$HOME/.bashrc"
+          test -e "$HOME/.bashrc.mybash-backup"
+          bash -ic "echo BASHRC_PROMPT_OK" 2>&1 | grep -q BASHRC_PROMPT_OK
+
+      - name: Uninstall and restore
+        run: |
+          ./uninstall.sh
+          test ! -L "$HOME/.bashrc"
+          test -f "$HOME/.bashrc"
+          echo "=== UNINSTALL OK ==="
