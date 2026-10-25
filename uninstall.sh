@@ -2,7 +2,7 @@
 set -euo pipefail
 
 INSTALL_DIR="$HOME/.local/share/mybash"
-FONT_DIR="$HOME/.local/share/fonts/JetBrainsMonoNF"
+NERD_FONTS=("JetBrainsMono" "FiraCode" "CascadiaCode" "Hack")
 BACKUP_SUFFIX=".mybash-backup"
 
 restore() {
@@ -18,7 +18,11 @@ restore "$HOME/.bashrc"
 restore "$HOME/.config/starship.toml"
 restore "$HOME/.config/fastfetch/config.jsonc"
 
-rm -rf "$INSTALL_DIR" "$FONT_DIR"
+rm -rf "$INSTALL_DIR"
+
+for font in "${NERD_FONTS[@]}"; do
+  rm -rf "$HOME/.local/share/fonts/${font}NF"
+done
 fc-cache -f || true
 
 echo "Uninstalled. Installed packages (starship, fastfetch, fzf, ...) were left in place."

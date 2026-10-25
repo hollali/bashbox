@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="$HOME/.local/share/mybash"
-FONT_DIR="$HOME/.local/share/fonts/JetBrainsMonoNF"
+NERD_FONTS=("JetBrainsMono" "FiraCode" "CascadiaCode" "Hack")
 BACKUP_SUFFIX=".mybash-backup"
 
 info() { echo "[*] $*"; }
@@ -57,15 +57,24 @@ if ! command -v starship >/dev/null 2>&1; then
   curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
 
-# --- 4. Nerd Font ---
-if [ ! -d "$FONT_DIR" ]; then
-  info "Installing JetBrainsMono Nerd Font..."
-  mkdir -p "$FONT_DIR"
-  curl -fsSL -o /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
-  unzip -oq /tmp/JetBrainsMono.zip -d "$FONT_DIR"
-  rm -f /tmp/JetBrainsMono.zip
-  fc-cache -f || true
-fi
+# --- 4. Nerd Fonts ---
+# Edit NERD_FONTS above to install more or fewer fonts.
+install_font() {
+  local font="$1"
+  local font_dir="$HOME/.local/share/fonts/${font}NF"
+  if [ -d "$font_dir" ]; then return 0; fi
+  info "Installing ${font} Nerd Font..."
+  mkdir -p "$font_dir"
+  curl -fsSL -o "/tmp/${font}.zip" \
+    "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip" \
+    || { warn "Could not download ${font} Nerd Font (skipping)"; return 1; }
+  unzip -oq "/tmp/${font}.zip" -d "$font_dir" || warn "Could not unzip ${font} Nerd Font (skipping)"
+  rm -f "/tmp/${font}.zip"
+}
+for font in "${NERD_FONTS[@]}"; do
+  install_font "$font" || true
+done
+fc-cache -f || true
 
 # --- 5. Copy config into place ---
 info "Copying config to $INSTALL_DIR..."
@@ -87,4 +96,4 @@ link "$INSTALL_DIR/.bashrc"                "$HOME/.bashrc"
 link "$INSTALL_DIR/starship.toml"          "$HOME/.config/starship.toml"
 link "$INSTALL_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
 
-info "Done! Set your terminal font to 'JetBrainsMono Nerd Font', then open a new terminal."
+info "Done! Set your terminal font to one of the installed 'Nerd Font' variants (e.g. 'JetBrainsMono Nerd Font'), then open a new terminal."

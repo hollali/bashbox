@@ -12,7 +12,7 @@ Inspired by [ChrisTitusTech/mybash](https://github.com/ChrisTitusTech/mybash) (M
 - The **Starship** prompt with a Nord-style two-line layout (`starship.toml`)
 - **Fastfetch** as a system info banner on every new terminal, with its own config, an `ff` alias, and an opt-out switch (`export MYBASH_NO_FETCH=1`; it also stays off inside VS Code)
 - **Zoxide**, **fzf**, and **Neovim** wired in when available
-- A **JetBrainsMono Nerd Font** install so prompt icons render
+- **Nerd Fonts** installed so prompt icons render: JetBrainsMono, FiraCode, CascadiaCode, and Hack (edit the `NERD_FONTS` list in `setup.sh` to add or remove fonts)
 - `setup.sh` and `uninstall.sh` that back up and restore your previous config
 
 ## Install
@@ -25,7 +25,7 @@ cd mybash
 
 The script detects your package manager (apt, dnf, pacman, or zypper) and installs dependencies one at a time, so a single missing package never aborts the run. It installs Fastfetch (with a PPA fallback on Ubuntu), Starship, and the Nerd Font, then symlinks the configs into place — existing files are renamed with a `.mybash-backup` suffix first.
 
-Afterwards, set your terminal font to **JetBrainsMono Nerd Font** and open a new terminal.
+Afterwards, set your terminal font to one of the installed Nerd Fonts (e.g. **JetBrainsMono Nerd Font**) and open a new terminal.
 
 ## Customising
 
