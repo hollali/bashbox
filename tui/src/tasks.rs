@@ -403,7 +403,9 @@ fn toggle_banner<F: Fn(String)>(send: &F) {
                     .join("\n")
                     + "\n";
                 let _ = fs::write(&rc, out);
-                send("Fastfetch banner enabled (removed BASHBOX_NO_FETCH from .bashrc).".to_string());
+                send(
+                    "Fastfetch banner enabled (removed BASHBOX_NO_FETCH from .bashrc).".to_string(),
+                );
             } else {
                 let out =
                     content.trim_end_matches('\n').to_string() + "\nexport BASHBOX_NO_FETCH=1\n";
