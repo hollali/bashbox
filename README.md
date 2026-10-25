@@ -73,7 +73,7 @@ What's inside — four tabs, ~20 tasks with live output in the run pane:
 - **Themes** — switch the starship palette (Nord, Dracula, Gruvbox, Catppuccin Mocha, Tokyo Night)
 - **System** — update system, clean package cache, run doctor, (re)install all Nerd Fonts
 
-The theme switcher rewrites `~/.config/starship.toml` from the embedded template, so custom tweaks to that file are replaced — keep customisations in the repo copy instead.
+The theme switcher only replaces the `palette = '...'` line and the `[palettes]` block of `~/.config/starship.toml`; every other section and any custom tweak is left as-is (fallback: if the file has no `palette` line, it's written fresh from the embedded template).
 
 ## Customising
 

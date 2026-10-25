@@ -6,6 +6,7 @@ use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
 use ratatui::{
+    crossterm::cursor::Hide,
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -15,6 +16,8 @@ use ratatui::{
 };
 
 use tasks::{Action, EventMsg, Task, TABS};
+
+use std::process::Command;
 
 #[derive(PartialEq)]
 enum Phase {
@@ -27,6 +30,7 @@ struct App {
     tab: usize,
     sel: usize,
     pending: Option<usize>,
+    auth_failed: bool,
     rx: Option<Receiver<EventMsg>>,
     running_name: &'static str,
     output: Vec<String>,
@@ -41,6 +45,7 @@ impl App {
             tab: 0,
             sel: 0,
             pending: None,
+            auth_failed: false,
             rx: None,
             running_name: "",
             output: Vec::new(),
@@ -101,6 +106,7 @@ fn start(app: &mut App, tasks: &[Task], idx: usize) {
     app.done = false;
     app.child_pid = None;
     app.pending = None;
+    app.auth_failed = false;
 }
 
 fn cancel_task(app: &mut App) {
@@ -121,6 +127,46 @@ fn close_output(app: &mut App) {
     app.output.clear();
     app.done = false;
     app.child_pid = None;
+}
+
+fn script_needs_sudo(tasks: &[Task], idx: usize) -> bool {
+    matches!(&tasks[idx].action, Action::Script(body) if body.contains("$SUDO"))
+}
+
+fn is_root() -> bool {
+    Command::new("id")
+        .arg("-u")
+        .output()
+        .map(|o| o.stdout.starts_with(b"0\n"))
+        .unwrap_or(false)
+}
+
+fn sudo_cached_ok() -> bool {
+    Command::new("sudo")
+        .args(["-n", "true"])
+        .stdin(std::process::Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn authenticate(terminal: &mut DefaultTerminal) -> bool {
+    use crossterm::cursor::Show;
+    use crossterm::execute;
+    use crossterm::terminal::{
+        disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    };
+    let _ = disable_raw_mode();
+    let _ = execute!(io::stdout(), LeaveAlternateScreen, Show);
+    let ok = Command::new("sudo")
+        .arg("-v")
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    let _ = enable_raw_mode();
+    let _ = execute!(io::stdout(), EnterAlternateScreen, Hide);
+    let _ = terminal.clear();
+    ok
 }
 
 pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
@@ -156,11 +202,26 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                         if app.pending.is_some() {
                             match key.code {
                                 KeyCode::Enter | KeyCode::Char('y') => {
-                                    if let Some(idx) = app.pending {
-                                        start(&mut app, tasks, idx);
+                                    if let Some(idx) = app.pending.take() {
+                                        if is_root()
+                                            || !script_needs_sudo(tasks, idx)
+                                            || sudo_cached_ok()
+                                        {
+                                            start(&mut app, tasks, idx);
+                                        } else {
+                                            app.auth_failed = !authenticate(terminal);
+                                            if !app.auth_failed {
+                                                start(&mut app, tasks, idx);
+                                            } else {
+                                                app.pending = Some(idx);
+                                            }
+                                        }
                                     }
                                 }
-                                KeyCode::Esc | KeyCode::Char('n') => app.pending = None,
+                                KeyCode::Esc | KeyCode::Char('n') => {
+                                    app.pending = None;
+                                    app.auth_failed = false;
+                                }
                                 _ => {}
                             }
                         } else {
@@ -174,7 +235,10 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                                 KeyCode::Enter => {
                                     if let Some(&idx) = targets.get(app.sel) {
                                         match tasks[idx].action {
-                                            Action::Script(_) => app.pending = Some(idx),
+                                            Action::Script(_) => {
+                                                app.pending = Some(idx);
+                                                app.auth_failed = false;
+                                            }
                                             _ => start(&mut app, tasks, idx),
                                         }
                                     }
@@ -247,7 +311,7 @@ fn draw(f: &mut Frame, app: &App, tasks: &[Task]) {
     draw_status(f, app, tasks, outer[2]);
 
     if let Some(idx) = app.pending {
-        draw_confirm(f, tasks, idx, area);
+        draw_confirm(f, app, tasks, idx, area);
     }
 }
 
@@ -330,7 +394,7 @@ fn draw_status(f: &mut Frame, app: &App, tasks: &[Task], area: Rect) {
     );
 }
 
-fn draw_confirm(f: &mut Frame, tasks: &[Task], idx: usize, area: Rect) {
+fn draw_confirm(f: &mut Frame, app: &App, tasks: &[Task], idx: usize, area: Rect) {
     let task = &tasks[idx];
     let block = Block::bordered().title(" Confirm ").title_style(
         Style::default()
@@ -338,21 +402,29 @@ fn draw_confirm(f: &mut Frame, tasks: &[Task], idx: usize, area: Rect) {
             .fg(Color::White)
             .add_modifier(Modifier::BOLD),
     );
-    let rect = centered_rect(area, 54, 7);
+    let rect = centered_rect(area, 54, 8);
     f.render_widget(Clear, rect);
+    let mut lines = vec![
+        Line::from(task.desc.to_string()).style(Style::default().fg(Color::Cyan)),
+        Line::default(),
+    ];
+    if app.auth_failed {
+        lines.push(
+            Line::from("sudo authentication failed - press Enter to try again")
+                .style(Style::default().fg(Color::Red)),
+        );
+        lines.push(Line::default());
+    }
+    lines.push(Line::from(vec![
+        Span::styled(" [Enter]", Style::default().fg(Color::Green)),
+        Span::raw(" run  "),
+        Span::styled("[Esc]", Style::default().fg(Color::Red)),
+        Span::raw(" cancel"),
+    ]));
     f.render_widget(
-        Paragraph::new(Text::from(vec![
-            Line::from(task.desc.to_string()).style(Style::default().fg(Color::Cyan)),
-            Line::default(),
-            Line::from(vec![
-                Span::styled(" [Enter]", Style::default().fg(Color::Green)),
-                Span::raw(" run  "),
-                Span::styled("[Esc]", Style::default().fg(Color::Red)),
-                Span::raw(" cancel"),
-            ]),
-        ]))
-        .block(block)
-        .wrap(Wrap { trim: true }),
+        Paragraph::new(Text::from(lines))
+            .block(block)
+            .wrap(Wrap { trim: true }),
         rect,
     );
 }

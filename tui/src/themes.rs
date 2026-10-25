@@ -141,26 +141,108 @@ fn render(p: &Palette) -> String {
         .replace("palette = 'nord'", &format!("palette = '{}'", p.name))
 }
 
+fn palette_block(p: &Palette) -> String {
+    render(p)
+        .lines()
+        .skip_while(|l| !l.trim_start().starts_with("[palettes."))
+        .map(|l| l.to_string())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn migrate_legacy(text: &str) -> String {
+    let mut out = text.to_string();
+    for (old, new) in [
+        ("nord_blue", "blue"),
+        ("nord_cyan", "cyan"),
+        ("nord_green", "green"),
+        ("nord_yellow", "yellow"),
+        ("nord_red", "red"),
+        ("nord_purple", "purple"),
+    ] {
+        out = out.replace(old, new);
+    }
+    out
+}
+
 pub fn switch_theme<F: Fn(String)>(idx: usize, send: F) {
     if idx >= PALETTES.len() {
         send("Unknown palette.".to_string());
         return;
     }
     let p = &PALETTES[idx];
-    let home = std::env::var("HOME").unwrap_or_default();
-    if home.is_empty() {
-        send("HOME is not set.".to_string());
-        return;
-    }
+    let home = match std::env::var("HOME") {
+        Ok(h) if !h.is_empty() => h,
+        _ => {
+            send("HOME is not set.".to_string());
+            return;
+        }
+    };
     let cfg = std::path::PathBuf::from(home).join(".config/starship.toml");
     if let Some(dir) = cfg.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    match std::fs::write(&cfg, render(p)) {
-        Ok(()) => send(format!(
-            "Switched starship palette to {}. Open a new terminal.",
-            p.name
-        )),
-        Err(e) => send(format!("Could not write {}: {}", cfg.display(), e)),
+    let content = std::fs::read_to_string(&cfg).unwrap_or_default();
+    if !content.contains("palette = '") {
+        std::fs::write(&cfg, render(p)).map_or_else(
+            |e| send(format!("Could not write {}: {}", cfg.display(), e)),
+            |_| send(format!("Wrote starship.toml with the {} palette.", p.name)),
+        );
+        return;
     }
+    let old = content
+        .lines()
+        .find_map(|l| {
+            let t = l.trim_start();
+            t.strip_prefix("palette = '")
+                .map(|s| s.split('\'').next().unwrap_or("nord").to_string())
+        })
+        .unwrap_or_else(|| "nord".to_string());
+    let hdr = format!("[palettes.{}]", old);
+
+    let mut out_lines: Vec<String> = Vec::new();
+    let mut block_done = false;
+    let mut block_insert_at: Option<usize> = None;
+    let mut in_block = false;
+    for line in content.lines() {
+        if line.trim_start().starts_with("palette =") {
+            out_lines.push(format!("palette = '{}'", p.name));
+            block_insert_at = Some(out_lines.len());
+            continue;
+        }
+        if !block_done && line.trim() == hdr {
+            for nl in palette_block(p).lines() {
+                out_lines.push(nl.to_string());
+            }
+            block_done = true;
+            in_block = true;
+            continue;
+        }
+        if in_block {
+            if line.starts_with('[') {
+                in_block = false;
+            } else {
+                continue;
+            }
+        }
+        out_lines.push(line.to_string());
+    }
+    if !block_done {
+        if let Some(at) = block_insert_at {
+            let block = palette_block(p);
+            for (offset, nl) in block.lines().enumerate() {
+                out_lines.insert(at + offset, nl.to_string());
+            }
+        }
+    }
+    let final_text = migrate_legacy(&(out_lines.join("\n") + "\n"));
+    std::fs::write(&cfg, final_text).map_or_else(
+        |e| send(format!("Could not write {}: {}", cfg.display(), e)),
+        |_| {
+            send(format!(
+                "Switched starship palette to {}. Existing customisations preserved; open a new terminal.",
+                p.name
+            ))
+        },
+    );
 }
