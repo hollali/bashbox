@@ -392,19 +392,18 @@ fn toggle_banner<F: Fn(String)>(send: &F) {
         }
     };
     let rc = home.join(".bashrc");
+    let marker = |l: &str| l.trim_start().starts_with("export") && l.contains("BASHBOX_NO_FETCH=1");
     match fs::read_to_string(&rc) {
         Ok(content) => {
-            if content.lines().any(|l| l.contains("BASHBOX_NO_FETCH=1")) {
+            if content.lines().any(marker) {
                 let out: String = content
                     .lines()
-                    .filter(|l| !l.contains("BASHBOX_NO_FETCH=1"))
+                    .filter(|l| !marker(l))
                     .collect::<Vec<_>>()
                     .join("\n")
                     + "\n";
                 let _ = fs::write(&rc, out);
-                send(
-                    "Fastfetch banner enabled (removed BASHBOX_NO_FETCH from .bashrc).".to_string(),
-                );
+                send("Fastfetch banner enabled (removed BASHBOX_NO_FETCH from .bashrc).".to_string());
             } else {
                 let out =
                     content.trim_end_matches('\n').to_string() + "\nexport BASHBOX_NO_FETCH=1\n";

@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/hollali/bashbox/actions/workflows/ci.yml/badge.svg)](https://github.com/hollali/bashbox/actions/workflows/ci.yml)
 
-A one-command Bash profile: tuned `.bashrc`, the Starship prompt with a Nord palette, a Fastfetch system-info banner, and zoxide/fzf/Neovim wired in.
+A one-command Bash profile and a linutil-style toolbox TUI: tuned `.bashrc`, the Starship prompt with swappable palettes, a Fastfetch system-info banner, one-key app installers, a doctor check, and the Nerd Fonts that make it all render.
 
-Inspired by [ChrisTitusTech/bashbox](https://github.com/ChrisTitusTech/bashbox) (MIT), built from scratch.
+Inspired by [ChrisTitusTech/mybash](https://github.com/ChrisTitusTech/mybash) (MIT), built from scratch.
 
 ## What you get
 
@@ -15,29 +15,11 @@ Inspired by [ChrisTitusTech/bashbox](https://github.com/ChrisTitusTech/bashbox) 
 - **Nerd Fonts** installed so prompt icons render: JetBrainsMono, FiraCode, CascadiaCode, and Hack (edit the `NERD_FONTS` list in `setup.sh` to add or remove fonts)
 - `setup.sh` and `uninstall.sh` that back up and restore your previous config
 
-## Toolbox (TUI)
+## Install & run
 
-bashbox ships a Rust terminal UI that turns the installer into a small toolbox, linutil-style:
+The project has two parts — install the shell profile, optionally install the toolbox TUI.
 
-```bash
-cargo install --locked --path tui
-bashbox
-```
-
-Or grab a prebuilt binary from the [releases page](https://github.com/hollali/bashbox/releases).
-
-Four tabs, ~20 tasks driven by the arrow keys, with live output scrolling in the run pane:
-
-- **Applications** — package-manager-aware installers: Docker, Node.js, Git, GitHub CLI, htop, tmux, ripgrep, bat, jq
-- **Bash config** — refresh dotfiles, uninstall, toggle the fastfetch banner, test shell startup
-- **Themes** — switch the starship palette (Nord, Dracula, Gruvbox, Catppuccin Mocha, Tokyo Night)
-- **System** — update system, clean package cache, run doctor, (re)install all Nerd Fonts
-
-Handy keys: `h/l` switch tabs, `j/k` move, `Enter` runs a task, `Esc` cancels a running task or closes the output pane, `q` quits. Scripted tasks ask for confirmation first. Tip: run `sudo -v` before launching so package tasks don't halt on password prompts. On headless systems, `bashbox --list` prints every task without a UI.
-
-The theme switcher rewrites `~/.config/starship.toml` from the embedded template, so custom tweaks to that file are replaced — keep customisations in the repo copy instead.
-
-## Install
+### 1. Shell profile (the install script)
 
 ```bash
 git clone --depth=1 https://github.com/hollali/bashbox.git
@@ -45,9 +27,53 @@ cd bashbox
 ./setup.sh
 ```
 
-The script detects your package manager (apt, dnf, pacman, or zypper) and installs dependencies one at a time, so a single missing package never aborts the run. It installs Fastfetch (with a PPA fallback on Ubuntu), Starship, and the Nerd Font, then symlinks the configs into place — existing files are renamed with a `.bashbox-backup` suffix first.
+What happens: the script detects your package manager (apt, dnf, pacman, or zypper), installs all dependencies, Starship, Fastfetch, and the Nerd Fonts, then symlinks the configs into place. Existing files are renamed with a `.bashbox-backup` suffix first, so nothing is lost.
 
-Afterwards, set your terminal font to one of the installed Nerd Fonts (e.g. **JetBrainsMono Nerd Font**) and open a new terminal.
+Two steps after installing:
+
+1. Set your terminal font to one of the installed Nerd Fonts (e.g. **JetBrainsMono Nerd Font**) — otherwise prompt icons render as boxes.
+2. Open a new terminal. You should see the Fastfetch banner and the two-line Nord prompt.
+
+Verify everything: run `./uninstall.sh` to fully remove (restores backups), or use the toolbox `doctor` task below.
+
+### 2. Toolbox (terminal UI)
+
+**Option A — prebuilt binary** (attached to tagged releases, `x86_64` Linux):
+
+```bash
+curl -fsSL -o /tmp/bashbox \
+  https://github.com/hollali/bashbox/releases/latest/download/bashbox
+chmod +x /tmp/bashbox && sudo mv /tmp/bashbox /usr/local/bin/bashbox
+```
+
+**Option B — build from source** (needs a Rust toolchain):
+
+```bash
+cargo install --locked --path tui
+```
+
+**Option C — from a clone** (no install, build and run in place):
+
+```bash
+cd tui && cargo run --release
+```
+
+Then run:
+
+```bash
+bashbox
+```
+
+Use `h/l` to switch tabs, `j/k` to move, `Enter` to run a task, `Esc` to cancel or close, `q` to quit. First-time users: run the **Run doctor** task in the *System* tab to confirm everything installed correctly. Run `bashbox --list` to see every task without a UI, and `sudo -v` before launching so package tasks don't halt on password prompts.
+
+What's inside — four tabs, ~20 tasks with live output in the run pane:
+
+- **Applications** — package-manager-aware installers: Docker, Node.js, Git, GitHub CLI, htop, tmux, ripgrep, bat, jq
+- **Bash config** — refresh dotfiles, uninstall, toggle the fastfetch banner, test shell startup
+- **Themes** — switch the starship palette (Nord, Dracula, Gruvbox, Catppuccin Mocha, Tokyo Night)
+- **System** — update system, clean package cache, run doctor, (re)install all Nerd Fonts
+
+The theme switcher rewrites `~/.config/starship.toml` from the embedded template, so custom tweaks to that file are replaced — keep customisations in the repo copy instead.
 
 ## Customising
 
