@@ -84,11 +84,17 @@ cp -f "$REPO_DIR/fastfetch/config.jsonc" "$INSTALL_DIR/fastfetch/"
 
 # --- 6. Symlink (back up anything that already exists) ---
 link() {
-  local src="$1" dest="$2"
+  local src="$1" dest="$2" prev
   mkdir -p "$(dirname "$dest")"
   if [ -e "$dest" ] && [ ! -L "$dest" ]; then
     mv "$dest" "$dest$BACKUP_SUFFIX"
     info "Backed up $dest"
+  fi
+  if [ -L "$dest" ]; then
+    prev="$(readlink "$dest" || true)"
+    if [ "$prev" != "$src" ]; then
+      warn "Replacing existing symlink $dest -> $prev (target not backed up)"
+    fi
   fi
   ln -sf "$src" "$dest"
 }

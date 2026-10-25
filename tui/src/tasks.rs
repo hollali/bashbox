@@ -79,7 +79,7 @@ fn update_cmd(pm: &str) -> String {
             .to_string(),
         "dnf" => "$SUDO dnf upgrade -y".to_string(),
         "pacman" => "$SUDO pacman -Syu".to_string(),
-        "zypper" => "$SUDO zypper refresh && $SUDO zypper update -y".to_string(),
+        "zypper" => "$SUDO zypper refresh && $SUDO zypper --non-interactive update".to_string(),
         _ => "echo 'No supported package manager found'".to_string(),
     }
 }
@@ -443,21 +443,16 @@ fn doctor<F: Fn(String)>(send: &F) {
     }
     send(String::new());
     if let Some(home) = home_dir() {
-        let checks: [(&str, PathBuf, bool); 4] = [
-            (".bashrc", home.join(".bashrc"), true),
-            ("starship.toml", home.join(".config/starship.toml"), true),
+        let checks: [(&str, PathBuf); 4] = [
+            (".bashrc", home.join(".bashrc")),
+            ("starship.toml", home.join(".config/starship.toml")),
             (
                 "fastfetch config",
                 home.join(".config/fastfetch/config.jsonc"),
-                true,
             ),
-            (
-                "dotfiles copy",
-                home.join(".local/share/bashbox/.bashrc"),
-                true,
-            ),
+            ("dotfiles copy", home.join(".local/share/bashbox/.bashrc")),
         ];
-        for (label, path, _) in checks {
+        for (label, path) in checks {
             match fs::symlink_metadata(&path) {
                 Ok(md) if md.is_symlink() => send(format!("[ok]   {} linked", label)),
                 Ok(_) => send(format!(

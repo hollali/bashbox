@@ -38,7 +38,7 @@ Verify everything: run `./uninstall.sh` to fully remove (restores backups), or u
 
 ### 2. Toolbox (terminal UI)
 
-**Option A — prebuilt binary** (attached to tagged releases, `x86_64` Linux):
+**Option A — prebuilt binary** (attached to tagged releases, `x86_64` Linux; publish one first — see below):
 
 ```bash
 curl -fsSL -o /tmp/bashbox \
@@ -102,6 +102,12 @@ GitHub Actions runs on every push and PR:
 - **rust** — cargo fmt/clippy check, release build, and `bashbox --list` smoke test of the TUI
 - **smoke-test** — runs `./setup.sh` on a clean runner, boots an interactive Bash to verify the prompt and banner, then `./uninstall.sh` and confirms the original `.bashrc` is restored
 - **release** — on tags (`v*`), builds the TUI binary and attaches it to a GitHub release
+
+To publish a release:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
 
 ## License
 
