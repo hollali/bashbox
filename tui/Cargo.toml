@@ -1,0 +1,13 @@
+[package]
+name = "mybash"
+version = "0.1.0"
+edition = "2021"
+description = "mybash toolbox - a terminal UI for everyday Linux tasks"
+license = "MIT"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+
+[profile.release]
+strip = true

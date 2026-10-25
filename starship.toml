@@ -3,66 +3,66 @@ command_timeout = 1000
 palette = 'nord'
 
 format = """
-[╭─](bold nord_blue)$username$hostname$directory$git_branch$git_status$python$nodejs$php$java$docker_context$cmd_duration
-[╰─](bold nord_blue)$character"""
+[╭─](bold blue)$username$hostname$directory$git_branch$git_status$python$nodejs$php$java$docker_context$cmd_duration
+[╰─](bold blue)$character"""
 
 [palettes.nord]
-nord_blue   = '#81A1C1'
-nord_cyan   = '#88C0D0'
-nord_green  = '#A3BE8C'
-nord_yellow = '#EBCB8B'
-nord_red    = '#BF616A'
-nord_purple = '#B48EAD'
+blue   = '#81A1C1'
+cyan   = '#88C0D0'
+green  = '#A3BE8C'
+yellow = '#EBCB8B'
+red    = '#BF616A'
+purple = '#B48EAD'
 
 [username]
 show_always = false
-style_user = 'bold nord_purple'
+style_user = 'bold purple'
 format = '[$user]($style) '
 
 [hostname]
 ssh_only = true
-style = 'bold nord_purple'
+style = 'bold purple'
 format = '[@$hostname]($style) '
 
 [directory]
-style = 'bold nord_cyan'
+style = 'bold cyan'
 truncation_length = 3
 truncation_symbol = '…/'
 format = '[$path]($style)[$read_only]($read_only_style) '
 
 [git_branch]
-style = 'bold nord_purple'
+style = 'bold purple'
 format = '[$symbol$branch]($style) '
 
 [git_status]
-style = 'nord_yellow'
+style = 'yellow'
 format = '([\[$all_status$ahead_behind\]]($style) )'
 
 [python]
-style = 'nord_yellow'
+style = 'yellow'
 format = '[$symbol$version]($style) '
 
 [nodejs]
-style = 'nord_green'
+style = 'green'
 format = '[$symbol$version]($style) '
 
 [php]
-style = 'nord_purple'
+style = 'purple'
 format = '[$symbol$version]($style) '
 
 [java]
-style = 'nord_red'
+style = 'red'
 format = '[$symbol$version]($style) '
 
 [docker_context]
-style = 'nord_blue'
+style = 'blue'
 format = '[$symbol$context]($style) '
 
 [cmd_duration]
 min_time = 2000
-style = 'nord_yellow'
+style = 'yellow'
 format = '[took $duration]($style) '
 
 [character]
-success_symbol = '[❯](bold nord_green)'
-error_symbol = '[❯](bold nord_red)'
+success_symbol = '[❯](bold green)'
+error_symbol = '[❯](bold red)'
