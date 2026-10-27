@@ -2,6 +2,7 @@ mod state;
 mod tasks;
 mod themes;
 
+use std::fs;
 use std::io::{self, IsTerminal, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -26,7 +27,7 @@ use ratatui::{
 };
 
 use state::State;
-use tasks::{Action, EventMsg, Status, StatusKind, Task, TABS};
+use tasks::{Action, EventMsg, Status, StatusKind, Task, TABS, TAB_SHORT};
 use themes::PALETTES;
 
 #[derive(PartialEq)]
@@ -76,6 +77,7 @@ struct App {
     last_click: Option<(Instant, usize)>,
     toast: Option<(String, Instant)>,
     screen: Option<ScreenLayout>,
+    help: bool,
 }
 
 impl App {
@@ -104,6 +106,7 @@ impl App {
             last_click: None,
             toast: None,
             screen: None,
+            help: false,
         }
     }
 
@@ -274,6 +277,7 @@ fn start_editor(
     path: &Path,
 ) {
     let editor = editor_name();
+    ensure_editable(path);
     let _ = disable_raw_mode();
     let _ = execute!(
         io::stdout(),
@@ -317,6 +321,15 @@ fn editor_name() -> String {
                 .filter(|e| !e.trim().is_empty())
         })
         .unwrap_or_else(|| "nano".to_string())
+}
+
+fn ensure_editable(path: &Path) {
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if !path.exists() {
+        let _ = fs::File::create(path);
+    }
 }
 
 fn open_editor(editor: &str, path: &Path) -> io::Result<std::process::ExitStatus> {
@@ -424,6 +437,11 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                         break;
                     }
 
+                    if app.help {
+                        app.help = false;
+                        continue;
+                    }
+
                     if app.input.is_some() {
                         match key.code {
                             KeyCode::Enter => submit_input(&mut app, tasks),
@@ -493,6 +511,11 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                         continue;
                     }
 
+                    if key.code == KeyCode::Char('?') {
+                        app.help = true;
+                        continue;
+                    }
+
                     match app.phase() {
                         Phase::Idle => {
                             if app.pending.is_some() {
@@ -526,6 +549,8 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                                     KeyCode::Up | KeyCode::Char('k') => app.up(targets.len()),
                                     KeyCode::Down | KeyCode::Char('j') => app.down(targets.len()),
                                     KeyCode::Char('/') => app.searching = true,
+                                    KeyCode::Char('c') => copy_selected_command(&mut app, tasks),
+                                    KeyCode::Char('r') => rerun_last(&mut app, terminal, tasks),
                                     KeyCode::Char('p') => {
                                         if let Some(&idx) = targets.get(app.sel) {
                                             let name = tasks[idx].name.clone();
@@ -577,6 +602,7 @@ pub fn run(terminal: &mut DefaultTerminal, tasks: &[Task]) -> io::Result<()> {
                                 app.output_scroll = None;
                             }
                             KeyCode::Char('y') => copy_output(&mut app),
+                            KeyCode::Char('w') => export_output(&mut app),
                             KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q') => {
                                 close_output(&mut app)
                             }
@@ -617,6 +643,10 @@ fn handle_mouse(
     column: u16,
     row: u16,
 ) {
+    if app.help {
+        app.help = false;
+        return;
+    }
     if app.input.is_some() || app.pending.is_some() {
         return;
     }
@@ -714,6 +744,68 @@ fn output_lines(app: &App) -> Vec<&String> {
             .iter()
             .filter(|line| line.to_lowercase().contains(&needle))
             .collect()
+    }
+}
+
+fn selected_command_text(app: &App, tasks: &[Task]) -> Option<(String, String)> {
+    let idx = app.selected_index(tasks)?;
+    let text = tasks[idx]
+        .command()
+        .map(str::to_string)
+        .unwrap_or_else(|| tasks[idx].preview());
+    Some((tasks[idx].name.clone(), text))
+}
+
+fn copy_selected_command(app: &mut App, tasks: &[Task]) {
+    let Some((name, text)) = selected_command_text(app, tasks) else {
+        app.set_toast("Select a task first.");
+        return;
+    };
+    if copy_to_clipboard(&text) {
+        app.set_toast(format!("Copied the command for {}.", name));
+    } else {
+        app.set_toast("Could not copy the command.");
+    }
+}
+
+fn rerun_last(app: &mut App, terminal: &mut DefaultTerminal, tasks: &[Task]) {
+    let Some(name) = app.state.recent.first().cloned() else {
+        app.set_toast("No task has been run yet.");
+        return;
+    };
+    if let Some(idx) = tasks.iter().position(|task| task.name == name) {
+        request_task(app, terminal, tasks, idx);
+    } else {
+        app.set_toast(format!("Last task '{}' is no longer available.", name));
+    }
+}
+
+fn export_output(app: &mut App) {
+    if app.output.is_empty() {
+        app.set_toast("Nothing to export.");
+        return;
+    }
+    let Some(dir) = state::state_dir() else {
+        app.set_toast("Could not find a state directory.");
+        return;
+    };
+    if fs::create_dir_all(&dir).is_err() {
+        app.set_toast("Could not create the state directory.");
+        return;
+    }
+    let path = dir.join("last-output.log");
+    let mut text = format!(
+        "# BashBox task: {}\n# result: {}\n\n",
+        app.running_name,
+        if app.failed { "failed" } else { "ok" }
+    );
+    for line in &app.output {
+        text.push_str(line);
+        text.push('\n');
+    }
+    match fs::write(&path, text) {
+        Ok(()) => app.set_toast(format!("Output saved to {}", path.display())),
+        Err(e) => app.set_toast(format!("Could not save output: {}", e)),
     }
 }
 
@@ -822,13 +914,7 @@ fn compute_layout(area: Rect, sections_width: u16) -> ScreenLayout {
             Constraint::Length(2),
         ])
         .split(area);
-    let detail_width = if area.width >= 100 {
-        40
-    } else if area.width >= 80 {
-        32
-    } else {
-        0
-    };
+    let detail_width = if area.width >= 100 { 40 } else { 0 };
     let mut constraints = vec![Constraint::Length(sections_width), Constraint::Min(0)];
     if detail_width > 0 {
         constraints.push(Constraint::Length(detail_width));
@@ -844,7 +930,7 @@ fn compute_layout(area: Rect, sections_width: u16) -> ScreenLayout {
     };
     let mut tabs = Vec::new();
     let mut x = area.x;
-    for name in TABS {
+    for name in tab_labels(area.width) {
         let width = name.chars().count() as u16 + 2;
         let clipped = width.min(area.right().saturating_sub(x));
         tabs.push(Rect {
@@ -885,7 +971,7 @@ fn draw(f: &mut Frame, app: &mut App, tasks: &[Task]) {
     let mut layout = compute_layout(area, app.state.sections_width);
 
     draw_header(f, app, area);
-    draw_categories(f, app, layout.sections);
+    draw_categories(f, app, tasks, layout.sections);
 
     match app.phase() {
         Phase::Idle => {
@@ -909,13 +995,28 @@ fn draw(f: &mut Frame, app: &mut App, tasks: &[Task]) {
     if let Some(idx) = app.pending {
         draw_confirm(f, app, tasks, idx, area);
     }
+    if app.help {
+        draw_help(f, area);
+    }
 
     app.screen = Some(layout);
 }
 
+fn tab_labels(width: u16) -> &'static [&'static str] {
+    let full_width: u16 = TABS
+        .iter()
+        .map(|name| name.chars().count() as u16 + 3)
+        .sum();
+    if width >= full_width {
+        TABS.as_slice()
+    } else {
+        TAB_SHORT.as_slice()
+    }
+}
+
 fn draw_header(f: &mut Frame, app: &App, area: Rect) {
     let mut spans: Vec<Span> = Vec::new();
-    for (i, name) in TABS.iter().enumerate() {
+    for (i, name) in tab_labels(area.width).iter().enumerate() {
         spans.push(Span::styled(
             format!(" {} ", name),
             header_style(i == app.tab),
@@ -933,8 +1034,15 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
     );
 }
 
-fn draw_categories(f: &mut Frame, app: &App, area: Rect) {
-    let items: Vec<ListItem> = TABS.iter().map(|t| ListItem::new(t.to_string())).collect();
+fn draw_categories(f: &mut Frame, app: &App, tasks: &[Task], area: Rect) {
+    let items: Vec<ListItem> = TABS
+        .iter()
+        .enumerate()
+        .map(|(tab, name)| {
+            let count = tasks.iter().filter(|task| task.tab == tab).count();
+            ListItem::new(format!("{} ({})", name, count))
+        })
+        .collect();
     let list = List::new(items).block(Block::bordered().title("Sections"));
     let mut state = ListState::default();
     state.select(Some(app.tab));
@@ -1157,7 +1265,7 @@ fn draw_status(f: &mut Frame, app: &App, tasks: &[Task], area: Rect) {
                         format!(" · filter: {}", app.output_query)
                     }
                 ),
-                "y copy · / search · arrows scroll · Esc close".to_string(),
+                "y copy · w save · / search · arrows scroll · Esc close".to_string(),
             )
         }
     } else if app.pending.is_some() {
@@ -1171,7 +1279,7 @@ fn draw_status(f: &mut Frame, app: &App, tasks: &[Task], area: Rect) {
                 .get(app.sel)
                 .map(|&i| tasks[i].desc.clone())
                 .unwrap_or_default(),
-            "1-5/h/l sections · / search · p pin · [/] width · Enter run · q quit".to_string(),
+            "1-9/h/l sections · / search · r rerun · p pin · c copy · ? help · q quit".to_string(),
         )
     } else {
         (String::new(), "Esc cancel/close".to_string())
@@ -1253,6 +1361,45 @@ fn draw_confirm(f: &mut Frame, app: &App, tasks: &[Task], idx: usize, area: Rect
     );
 }
 
+fn draw_help(f: &mut Frame, area: Rect) {
+    let rect = centered_rect(area, 68, 20);
+    f.render_widget(Clear, rect);
+    let lines = vec![
+        Line::from("Navigation").style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Line::from("  1-9              Jump to a section"),
+        Line::from("  h/l, left/right  Switch sections"),
+        Line::from("  j/k, up/down     Move between tasks"),
+        Line::from("  /                Search tasks (Enter keeps, Esc clears)"),
+        Line::from("  c                Copy the selected task's command"),
+        Line::from("  p                Pin/unpin the selected task"),
+        Line::from("  [ / ]            Shrink/grow the sections pane"),
+        Line::default(),
+        Line::from("Running").style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Line::from("  Enter            Run the selected task"),
+        Line::from("  r                Re-run the most recent task"),
+        Line::from("  Esc              Cancel a running task / close output"),
+        Line::from("  y                Copy output to the clipboard"),
+        Line::from("  w                Save output to the state directory"),
+        Line::from("  /                Filter output (Enter keeps, Esc clears)"),
+        Line::default(),
+        Line::from("Press any key to close this help.  q quits."),
+    ];
+    f.render_widget(
+        Paragraph::new(Text::from(lines))
+            .block(Block::bordered().title(" Help (? or any key to close) "))
+            .wrap(Wrap { trim: true }),
+        rect,
+    );
+}
+
 fn centered_rect(area: Rect, w: u16, h: u16) -> Rect {
     let w = w.min(area.width);
     let h = h.min(area.height);
@@ -1327,19 +1474,24 @@ fn print_help() {
     println!("  --logs                 Show the last failed task log");
     println!("  --doctor               Check dependencies, links, and fonts, then exit");
     println!("  --fetch-tasks <url>    Download and validate a task TOML into tasks.d");
+    println!("  --completions <shell>  Print completion script (bash, zsh, fish)");
     println!("  -V, --version          Print the version and exit");
     println!("  -h, --help             Show this help");
     println!();
     println!("Keys:");
-    println!("  1-5          Jump to a section");
+    println!("  1-9          Jump to a section");
     println!("  h/l, arrows  Switch sections");
     println!("  j/k, arrows  Move between tasks");
     println!("  /            Search tasks (Enter keeps, Esc clears)");
+    println!("  c            Copy the selected task's command");
     println!("  p            Pin/unpin the selected task");
+    println!("  r            Re-run the most recent task");
     println!("  [ / ]        Shrink/grow the sections pane");
     println!("  Enter        Run the selected task");
     println!("  Esc          Cancel/close, or clear a filter");
     println!("  y            Copy run output (clipboard/OSC52)");
+    println!("  w            Save run output to the state directory");
+    println!("  ?            Show the in-app help overlay");
     println!("  q            Quit");
     println!("  Mouse        Click a section/task, double-click to run, wheel to scroll");
     println!();
@@ -1347,6 +1499,119 @@ fn print_help() {
     println!("              plus any ~/.config/bashbox/tasks.d/*.toml");
     println!("              (override with BASHBOX_TASKS)");
     println!("State and failed-task logs live in ~/.local/state/bashbox/");
+}
+
+fn sh_quote(value: &str) -> String {
+    value.replace('\'', "'\\''")
+}
+
+fn completion_script(shell: &str, tasks: &[Task]) -> Result<String, String> {
+    let names: Vec<String> = tasks.iter().map(|task| sh_quote(&task.name)).collect();
+    match shell {
+        "bash" => Ok(bash_completion(&names)),
+        "zsh" => Ok(zsh_completion(&names)),
+        "fish" => Ok(fish_completion(&names)),
+        other => Err(format!(
+            "unsupported shell '{}' (use bash, zsh, or fish)",
+            other
+        )),
+    }
+}
+
+fn bash_completion(names: &[String]) -> String {
+    let mut script = String::from(
+        "_bashbox() {
+    local cur prev task
+    COMPREPLY=()
+    cur=\"${COMP_WORDS[COMP_CWORD]}\"
+    prev=\"${COMP_WORDS[COMP_CWORD-1]}\"
+    if [[ \"$prev\" == \"--run\" ]]; then
+        local -a tasks=(
+",
+    );
+    for name in names {
+        script.push_str(&format!("            '{}'\n", name));
+    }
+    script.push_str(
+        "        )
+        for task in \"${tasks[@]}\"; do
+            [[ \"$task\" == \"$cur\"* ]] && COMPREPLY+=(\"$task\")
+        done
+        return 0
+    fi
+    if [[ \"$cur\" == -* ]]; then
+        COMPREPLY=( $(compgen -W \"--list --json --run --arg --dry-run --yes --recent --logs --doctor --fetch-tasks --completions -V --version -h --help\" -- \"$cur\") )
+    fi
+}
+complete -F _bashbox bashbox
+",
+    );
+    script
+}
+
+fn zsh_completion(names: &[String]) -> String {
+    let mut script = String::from(
+        "#compdef bashbox
+_bashbox() {
+    local -a tasks
+    tasks=(
+",
+    );
+    for name in names {
+        script.push_str(&format!("        '{}'\n", name));
+    }
+    script.push_str(
+        "    )
+    _arguments \\
+        '--list[List every task and exit]' \\
+        '--json[With --list, emit JSON]' \\
+        '--run[Run one task and exit]:task:->tasks' \\
+        '--arg[Value for a task prompt]:value:_default' \\
+        '--dry-run[Print what would run]' \\
+        '--yes[Accepted for scripting]' \\
+        '--recent[Show recently run tasks]' \\
+        '--logs[Show the last failed task log]' \\
+        '--doctor[Check dependencies and exit]' \\
+        '--fetch-tasks[Download and validate a task TOML]:url:_urls' \\
+        '--completions[Print a completion script]:shell:(bash zsh fish)' \\
+        '(-h --help)'{-h,--help}'[Show help]' \\
+        '(-V --version)'{-V,--version}'[Print the version]'
+    case $state in
+        tasks) compadd -- \"${tasks[@]}\" ;;
+    esac
+}
+_bashbox \"$@\"
+",
+    );
+    script
+}
+
+fn fish_completion(names: &[String]) -> String {
+    let mut script = String::from(
+        "# Fish completions for bashbox
+complete -c bashbox -f
+complete -c bashbox -l list -d 'List every task and exit'
+complete -c bashbox -l json -d 'With --list, emit JSON'
+complete -c bashbox -l run -x -d 'Run one task and exit'
+complete -c bashbox -l arg -x -d 'Value for a task prompt'
+complete -c bashbox -l dry-run -d 'Print what would run'
+complete -c bashbox -l yes -d 'Accepted for scripting'
+complete -c bashbox -l recent -d 'Show recently run tasks'
+complete -c bashbox -l logs -d 'Show the last failed task log'
+complete -c bashbox -l doctor -d 'Check dependencies and exit'
+complete -c bashbox -l fetch-tasks -x -d 'Download and validate a task TOML'
+complete -c bashbox -l completions -x -a 'bash zsh fish' -d 'Print a completion script'
+complete -c bashbox -s h -l help -d 'Show help'
+complete -c bashbox -s V -l version -d 'Print the version'
+",
+    );
+    for name in names {
+        script.push_str(&format!(
+            "complete -c bashbox -n '__fish_seen_argument -l run' -a '{}'\n",
+            name
+        ));
+    }
+    script
 }
 
 #[derive(Default)]
@@ -1360,6 +1625,7 @@ struct Options {
     logs: bool,
     doctor: bool,
     fetch_tasks: Option<String>,
+    completions: Option<String>,
     help: bool,
     version: bool,
 }
@@ -1397,6 +1663,14 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
                 options.fetch_tasks = Some(
                     args.get(i)
                         .ok_or_else(|| "--fetch-tasks needs a URL".to_string())?
+                        .clone(),
+                );
+            }
+            "--completions" => {
+                i += 1;
+                options.completions = Some(
+                    args.get(i)
+                        .ok_or_else(|| "--completions needs a shell name".to_string())?
                         .clone(),
                 );
             }
@@ -1446,6 +1720,7 @@ fn run_task_cli(tasks: &[Task], name: &str, arg: Option<&str>, dry_run: bool) ->
         return 0;
     }
     if let Action::Edit(path) = &task.action {
+        ensure_editable(path);
         return match open_editor(&editor_name(), path).or_else(|_| open_editor("vi", path)) {
             Ok(status) if status.success() => 0,
             Ok(status) => status.code().unwrap_or(1),
@@ -1587,6 +1862,17 @@ fn main() -> io::Result<()> {
         tasks::doctor(&|line| println!("{}", line));
         return Ok(());
     }
+    if let Some(shell) = &options.completions {
+        let tasks = tasks::build();
+        match completion_script(shell, &tasks) {
+            Ok(script) => print!("{}", script),
+            Err(message) => {
+                eprintln!("bashbox: {}", message);
+                std::process::exit(2);
+            }
+        }
+        return Ok(());
+    }
 
     let tasks = tasks::build();
     if let Some(run) = &options.run {
@@ -1643,5 +1929,100 @@ mod tests {
         assert_eq!(options.run.as_deref(), Some("Disk usage"));
         assert_eq!(options.arg.as_deref(), Some("x"));
         assert!(options.dry_run);
+    }
+
+    #[test]
+    fn parses_completions_option() {
+        let args = vec![
+            "bashbox".to_string(),
+            "--completions".to_string(),
+            "fish".to_string(),
+        ];
+        let options = parse_args(&args).expect("valid args");
+        assert_eq!(options.completions.as_deref(), Some("fish"));
+    }
+
+    #[test]
+    fn generates_completions() {
+        let tasks = tasks::build();
+        let bash = completion_script("bash", &tasks).expect("bash script");
+        assert!(bash.contains("complete -F _bashbox bashbox"));
+        assert!(bash.contains("Disk usage"));
+        let zsh = completion_script("zsh", &tasks).expect("zsh script");
+        assert!(zsh.starts_with("#compdef bashbox"));
+        let fish = completion_script("fish", &tasks).expect("fish script");
+        assert!(fish.contains("complete -c bashbox"));
+        assert!(completion_script("tcsh", &tasks).is_err());
+    }
+
+    #[test]
+    fn quotes_shell_values() {
+        assert_eq!(sh_quote("it's"), "it'\\''s");
+    }
+
+    #[test]
+    fn narrow_header_keeps_all_tabs_visible() {
+        assert_eq!(tab_labels(80)[0], "Apps");
+        assert_eq!(tab_labels(120)[0], "Applications");
+        let layout = compute_layout(Rect::new(0, 0, 80, 24), 22);
+        assert_eq!(layout.tabs.len(), TABS.len());
+        assert!(layout.tabs.iter().all(|rect| rect.width > 0));
+        assert!(layout.tabs.last().is_some_and(|rect| rect.right() <= 80));
+        assert!(layout.details.is_none());
+        assert!(compute_layout(Rect::new(0, 0, 120, 24), 22)
+            .details
+            .is_some());
+    }
+
+    #[test]
+    fn tab_navigation_wraps_and_resets_filter() {
+        let tasks = tasks::build();
+        let mut app = App::new(&tasks, State::default());
+        app.set_tab(TABS.len() - 1);
+        app.next_tab();
+        assert_eq!(app.tab, 0);
+        app.prev_tab();
+        assert_eq!(app.tab, TABS.len() - 1);
+
+        app.sel = 4;
+        app.filter = "disk".to_string();
+        app.searching = true;
+        app.set_tab(1);
+        assert_eq!(app.sel, 0);
+        assert!(app.filter.is_empty());
+        assert!(!app.searching);
+    }
+
+    #[test]
+    fn filter_and_favorites_order_targets() {
+        let tasks = tasks::build();
+        let mut app = App::new(&tasks, State::default());
+        app.set_tab(0);
+        let targets = app.targets(&tasks);
+        assert!(targets.len() > 1);
+        let second = tasks[targets[1]].name.clone();
+        app.state.toggle_favorite(&second);
+        let targets = app.targets(&tasks);
+        assert_eq!(tasks[targets[0]].name, second);
+
+        app.filter = "docker".to_string();
+        let targets = app.targets(&tasks);
+        assert!(!targets.is_empty());
+        assert!(targets.iter().all(|&idx| {
+            let task = &tasks[idx];
+            task.name.to_lowercase().contains("docker")
+                || task.desc.to_lowercase().contains("docker")
+        }));
+    }
+
+    #[test]
+    fn selected_command_text_uses_filtered_task() {
+        let tasks = tasks::build();
+        let mut app = App::new(&tasks, State::default());
+        app.set_tab(0);
+        app.filter = "Install Docker".to_string();
+        let (name, text) = selected_command_text(&app, &tasks).expect("selected task");
+        assert_eq!(name, "Install Docker");
+        assert!(text.contains("get.docker.com"));
     }
 }

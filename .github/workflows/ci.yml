@@ -16,6 +16,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
+          bash -n setup.sh uninstall.sh .bashrc
           shellcheck setup.sh uninstall.sh .bashrc
 
       - name: Validate config files
@@ -68,6 +69,12 @@ jobs:
           ./target/release/bashbox --version
           ./target/release/bashbox --help
           ./target/release/bashbox --run "Disk usage" --dry-run
+          ./target/release/bashbox --completions bash > /tmp/bashbox.bash
+          bash -n /tmp/bashbox.bash
+          ./target/release/bashbox --completions zsh > /tmp/_bashbox
+          ./target/release/bashbox --completions fish > /tmp/bashbox.fish
+          ./target/release/bashbox --run "TLS certificate check" --arg example.com --dry-run | grep -q openssl
+          ./target/release/bashbox --list --json | python3 -c 'import json,sys; tasks=json.load(sys.stdin); assert len(tasks) >= 140, len(tasks); assert len({t["name"] for t in tasks}) == len(tasks)'
 
   smoke-test:
     runs-on: ubuntu-latest
@@ -115,8 +122,13 @@ jobs:
       - name: Build
         run: cargo build --locked --release
 
+      - name: Checksum
+        run: sha256sum target/release/bashbox > target/release/bashbox.sha256
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: tui/target/release/bashbox
+          files: |
+            tui/target/release/bashbox
+            tui/target/release/bashbox.sha256
           generate_release_notes: true

@@ -2,7 +2,7 @@
 name = "bashbox"
 version = "0.1.0"
 edition = "2021"
-description = "bashbox toolbox - a terminal UI for everyday Linux tasks"
+description = "bashbox toolbox - a terminal UI for developer, cloud, security, and DevOps tasks"
 license = "MIT"
 
 [dependencies]
