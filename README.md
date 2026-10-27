@@ -2,14 +2,15 @@
 
 [![CI](https://github.com/hollali/bashbox/actions/workflows/ci.yml/badge.svg)](https://github.com/hollali/bashbox/actions/workflows/ci.yml)
 
-A one-command Bash profile and a linutil-style toolbox TUI: tuned `.bashrc`, the Starship prompt with swappable palettes, a Fastfetch system-info banner, one-key app installers, a doctor check, and the Nerd Fonts that make it all render.
+A one-command Bash profile and a linutil-style toolbox TUI: tuned `.bashrc`, the Starship prompt with swappable palettes, a Fastfetch system-info banner, one-key app installers, a doctor check, and the Nerd Fonts that make it all render. The toolbox has searchable tasks, install-status badges, mouse support, and your own custom tasks.
 
 Inspired by [ChrisTitusTech/mybash](https://github.com/ChrisTitusTech/mybash) (MIT), built from scratch.
 
 ## What you get
 
 - A tuned `.bashrc` with generous history handling, aliases (`gs`, `gc`, `killport`, `extract`, ...), and handy functions
-- The **Starship** prompt with a Nord-style two-line layout (`starship.toml`)
+- An `update()` helper that upgrades packages non-interactively across apt, dnf, pacman, and zypper
+- The **Starship** prompt with a Nord-style two-line layout (`starship.toml`); your username is always visible and the hostname appears over SSH
 - **Fastfetch** as a system info banner on every new terminal, with its own config, an `ff` alias, and an opt-out switch (`export BASHBOX_NO_FETCH=1`; it also stays off inside VS Code)
 - **Zoxide**, **fzf**, and **Neovim** wired in when available
 - **Nerd Fonts** installed so prompt icons render: JetBrainsMono, FiraCode, CascadiaCode, and Hack (edit the `NERD_FONTS` list in `setup.sh` to add or remove fonts)
@@ -64,20 +65,60 @@ Then run:
 bashbox
 ```
 
-Use `h/l` to switch tabs, `j/k` to move, `Enter` to run a task, `Esc` to cancel or close, `q` to quit. First-time users: run the **Run doctor** task in the *System* tab to confirm everything installed correctly. Run `bashbox --list` to see every task without a UI, and `sudo -v` before launching so package tasks don't halt on password prompts.
+Navigate with `1`-`5` or `h`/`l` to switch sections, `j`/`k` (or arrows) to move, `/` to search, `Enter` to run, `Esc` to cancel/close (or clear a search), and `q` to quit. Press `p` to pin/unpin a task, `[`/`]` to resize the sections pane, `y` to copy run output, and `/` in the run pane to filter output. Wide terminals show a details pane with the command preview, status, timeout, and theme swatches. Mouse users can click a section or task, double-click a task to run it, and scroll the task list. First-time users: run the **Run doctor** task in the *System* tab to confirm everything installed correctly. Run `bashbox --list` to see every task without a UI, `bashbox --doctor` to run the checks non-interactively, `bashbox --help` for all flags, and `sudo -v` before launching so package tasks don't halt on password prompts.
 
-What's inside — four tabs, ~20 tasks with live output in the run pane:
+What's inside — five tabs, ~45 built-in tasks with live output in the run pane:
 
-- **Applications** — package-manager-aware installers: Docker, Node.js, Git, GitHub CLI, htop, tmux, ripgrep, bat, jq
-- **Bash config** — refresh dotfiles, uninstall, toggle the fastfetch banner, test shell startup
+- **Applications** — package-manager-aware installers: Docker, Node.js, Git, GitHub CLI, htop, tmux, ripgrep, bat, jq, Python 3, Go, Neovim, Rust, Docker Compose, kubectl, Helm, each with an installed/missing badge
+- **Bash config** — refresh dotfiles, uninstall, toggle the fastfetch banner, test shell startup, and edit `.bashrc`/Starship/Fastfetch configs in `$EDITOR`
 - **Themes** — switch the starship palette (Nord, Dracula, Gruvbox, Catppuccin Mocha, Tokyo Night)
-- **System** — update system, clean package cache, run doctor, (re)install all Nerd Fonts
+- **System** — update system, clean package cache, run doctor, (re)install all Nerd Fonts (with an `n/4 fonts` badge)
+- **Diagnostics** — disk, memory, network, listening ports, failed services, environment/WSL/container detection, update check, last failure log, recent runs, backups, and `.bashrc` diff
 
-The theme switcher only replaces the `palette = '...'` line and the `[palettes]` block of `~/.config/starship.toml`; every other section and any custom tweak is left as-is (fallback: if the file has no `palette` line, it's written fresh from the embedded template).
+Package updates are non-interactive across apt, dnf, pacman, and zypper; `Update system` no longer runs `autoremove` (use **Clean package cache** when you want that). The theme switcher only replaces the `palette = '...'` line and the `[palettes]` block of `~/.config/starship.toml`; every other section and any custom tweak is left as-is (fallback: if the file has no `palette` line, it's written fresh from the embedded template). If a task exits non-zero, its output is written to `~/.local/state/bashbox/last-task.log` and the run pane shows the path. Favorites, recent runs, and the pane width persist in `~/.local/state/bashbox/state.toml`.
 
 ## Customising
 
 Edit the files in this repo and re-run `./setup.sh`. The copies live in `~/.local/share/bashbox`, and your dotfiles are symlinks to them.
+
+## Custom tasks
+
+Add your own commands to the toolbox with `~/.config/bashbox/tasks.toml` (or point `BASHBOX_TASKS` at another file). You can also drop additional `*.toml` files into `~/.config/bashbox/tasks.d/`; they are loaded in sorted order.
+
+```toml
+[[tasks]]
+name = "Disk usage"
+description = "Show free space on mounted filesystems"
+command = "df -h"
+section = "System"   # Applications, Bash config, Themes, System, or Diagnostics
+check = "df"         # optional: show installed/missing for this binary
+
+[[tasks]]
+name = "Ping host"
+script = "ping -c 1 {}"   # {} is replaced with the --arg value / prompt input
+prompt = "Host to ping"
+timeout = 10              # optional seconds before the task is killed
+destructive = true        # optional extra confirmation
+tab = 4                   # or use tab = 0..4 instead of section
+```
+
+Custom commands run through the same `$SUDO` wrapper as built-ins, so `sudo` works (and is cached up front). Use `check = "fonts"` for the Nerd Fonts badge. Prompt values are shell-quoted before substitution. An invalid file does not stop the toolbox: it appears as **Custom tasks: config problem** under *System*, and the error is shown in the run pane. `bashbox --list` includes custom tasks too.
+
+## Non-interactive use
+
+```bash
+bashbox --list                 # numbered text list of every task
+bashbox --list --json          # machine-readable list
+bashbox --run "Disk usage"     # run one task through the normal task runner
+bashbox --run "Ping host" --arg example.com
+bashbox --run "Update system" --dry-run
+bashbox --recent               # recently run tasks
+bashbox --logs                 # last failed task log
+bashbox --fetch-tasks URL      # download + validate a task TOML into tasks.d
+bashbox --doctor
+```
+
+`--run` accepts a task name or its 1-based position. `--dry-run` prints the command without executing it. Download URLs are validated as task TOML before being saved.
 
 ## Uninstall
 
@@ -99,7 +140,7 @@ Restores any backups it made and removes the installed copies. Packages (starshi
 GitHub Actions runs on every push and PR:
 
 - **lint** — ShellCheck on all shell files, plus TOML/JSON validation of `starship.toml` and `fastfetch/config.jsonc`
-- **rust** — cargo fmt/clippy check, release build, and `bashbox --list` smoke test of the TUI
+- **rust** — cargo fmt/clippy check, unit tests, release build, and `bashbox --list`/`--doctor`/`--help` smoke tests of the TUI
 - **smoke-test** — runs `./setup.sh` on a clean runner, boots an interactive Bash to verify the prompt and banner, then `./uninstall.sh` and confirms the original `.bashrc` is restored
 - **release** — on tags (`v*`), builds the TUI binary and attaches it to a GitHub release
 

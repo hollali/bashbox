@@ -83,14 +83,20 @@ extract() {
 }
 
 update() {
-  if command -v apt >/dev/null 2>&1; then
-    sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get update \
+      && sudo env DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+        -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
   elif command -v dnf >/dev/null 2>&1; then
-    sudo dnf upgrade -y
+    sudo dnf upgrade --refresh -y
   elif command -v pacman >/dev/null 2>&1; then
-    sudo pacman -Syu
+    sudo pacman -Syu --noconfirm
+  elif command -v zypper >/dev/null 2>&1; then
+    sudo zypper --non-interactive refresh \
+      && sudo zypper --non-interactive update
   else
-    echo "No supported package manager found"
+    echo "No supported package manager found" >&2
+    return 1
   fi
 }
 

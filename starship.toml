@@ -15,7 +15,7 @@ red    = '#BF616A'
 purple = '#B48EAD'
 
 [username]
-show_always = false
+show_always = true
 style_user = 'bold purple'
 format = '[$user]($style) '
 

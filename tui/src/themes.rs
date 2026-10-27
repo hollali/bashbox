@@ -142,12 +142,11 @@ fn render(p: &Palette) -> String {
 }
 
 fn palette_block(p: &Palette) -> String {
-    render(p)
-        .lines()
-        .skip_while(|l| !l.trim_start().starts_with("[palettes."))
-        .map(|l| l.to_string())
-        .collect::<Vec<_>>()
-        .join("\n")
+    let mut block = format!("[palettes.{}]\n", p.name);
+    for (key, hex) in p.colors {
+        block.push_str(&format!("{} = '{}'\n", key, hex));
+    }
+    block.trim_end().to_string()
 }
 
 fn migrate_legacy(text: &str) -> String {
@@ -245,4 +244,25 @@ pub fn switch_theme<F: Fn(String)>(idx: usize, send: F) {
             ))
         },
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn palette_block_contains_only_the_palette() {
+        let block = palette_block(&PALETTES[1]);
+        assert!(block.starts_with("[palettes.dracula]"));
+        assert!(!block.contains("[username]"));
+        assert_eq!(block.lines().count(), 7);
+    }
+
+    #[test]
+    fn template_has_one_copy_of_each_section() {
+        let text = render(&PALETTES[0]);
+        assert_eq!(text.matches("[username]").count(), 1);
+        assert_eq!(text.matches("[character]").count(), 1);
+        assert_eq!(text.matches("[palettes.nord]").count(), 1);
+    }
 }
