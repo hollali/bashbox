@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::themes::PALETTES;
 
-pub const TABS: [&str; 10] = [
+pub const TABS: [&str; 11] = [
     "Applications",
     "Bash config",
     "Themes",
@@ -21,11 +21,12 @@ pub const TABS: [&str; 10] = [
     "Cloud",
     "Security",
     "DevOps",
+    "Games",
     "Uninstall Apps",
 ];
 
-pub const TAB_SHORT: [&str; 10] = [
-    "Apps", "Bash", "Themes", "System", "Diag", "Dev", "Cloud", "Sec", "Ops", "Uninst",
+pub const TAB_SHORT: [&str; 11] = [
+    "Apps", "Bash", "Themes", "System", "Diag", "Dev", "Cloud", "Sec", "Ops", "Game", "Uninst",
 ];
 
 const FONTS: [&str; 4] = ["JetBrainsMono", "FiraCode", "CascadiaCode", "Hack"];
@@ -1175,7 +1176,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Google Chrome",
             "Removes the google-chrome-stable package plus ~/.config/google-chrome, ~/.cache/google-chrome and /opt/google/chrome so a fresh install has no conflicts.",
-            9,
+            10,
             script(chrome_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1190,7 +1191,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall VLC",
             "Removes the vlc package plus ~/.config/vlc and ~/.cache/vlc so a fresh install has no conflicts.",
-            9,
+            10,
             script(vlc_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1205,7 +1206,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall VS Code",
             "Removes the code package plus ~/.config/Code and ~/.cache/Code so a fresh install has no conflicts.",
-            9,
+            10,
             script(vscode_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1220,7 +1221,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Antigravity IDE",
             "Removes the antigravity-ide package plus ~/.config/antigravity-ide and ~/.cache/antigravity-ide so a fresh install has no conflicts.",
-            9,
+            10,
             script(antigravity_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1748,7 +1749,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall OpenCode",
             "Removes the opencode binary plus ~/.opencode and ~/.config/opencode so a fresh install has no conflicts.",
-            9,
+            10,
             script(opencode_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1756,7 +1757,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Discord",
             "Removes Discord plus ~/.config/discord and ~/.cache/discord so a fresh install has no conflicts.",
-            9,
+            10,
             script(discord_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1764,7 +1765,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Spotify",
             "Removes Spotify plus ~/.config/spotify and ~/.cache/spotify so a fresh install has no conflicts.",
-            9,
+            10,
             script(spotify_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1772,7 +1773,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Obsidian",
             "Removes Obsidian plus ~/.config/obsidian and ~/.cache/obsidian so a fresh install has no conflicts.",
-            9,
+            10,
             script(obsidian_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1780,7 +1781,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Telegram",
             "Removes Telegram plus ~/.config/TelegramDesktop and ~/.cache/TelegramDesktop so a fresh install has no conflicts.",
-            9,
+            10,
             script(telegram_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1788,7 +1789,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Postman",
             "Removes /opt/postman, the /usr/local/bin/postman launcher, and ~/.config/Postman so a fresh install has no conflicts.",
-            9,
+            10,
             script(postman_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1796,7 +1797,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall DBeaver",
             "Removes DBeaver plus ~/.dbeaver, ~/.config/DBeaverData and ~/.cache/DBeaver so a fresh install has no conflicts.",
-            9,
+            10,
             script(dbeaver_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1804,7 +1805,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall GIMP",
             "Removes GIMP plus ~/.config/GIMP and ~/.cache/GIMP so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "gimp", &[".config/GIMP", ".cache/GIMP"])),
         )
         .destructive()
@@ -1812,7 +1813,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall OBS Studio",
             "Removes OBS Studio plus ~/.config/obs-studio and ~/.cache/obs-studio so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "obs-studio", &[".config/obs-studio", ".cache/obs-studio"])),
         )
         .destructive()
@@ -1820,7 +1821,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Blender",
             "Removes Blender plus ~/.config/blender and ~/.cache/blender so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "blender", &[".config/blender", ".cache/blender"])),
         )
         .destructive()
@@ -1828,7 +1829,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Inkscape",
             "Removes Inkscape plus ~/.config/inkscape and ~/.cache/inkscape so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "inkscape", &[".config/inkscape", ".cache/inkscape"])),
         )
         .destructive()
@@ -1836,7 +1837,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall HandBrake",
             "Removes HandBrake plus ~/.config/HandBrake and ~/.cache/HandBrake so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "handbrake", &[".config/HandBrake", ".cache/HandBrake"])),
         )
         .destructive()
@@ -1844,7 +1845,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Zoom",
             "Removes Zoom plus ~/.config/zoom and ~/.cache/zoom so a fresh install has no conflicts.",
-            9,
+            10,
             script({
                 let remove = match pm {
                     "apt" => "$SUDO apt-get remove -y --purge zoom",
@@ -1861,7 +1862,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Steam",
             "Removes Steam plus ~/.config/steam and ~/.cache/steam so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "steam", &[".config/steam", ".cache/steam"])),
         )
         .destructive()
@@ -1869,7 +1870,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Slack",
             "Removes Slack plus ~/.config/Slack and ~/.cache/Slack so a fresh install has no conflicts.",
-            9,
+            10,
             script({
                 let remove = match pm {
                     "apt" => "$SUDO apt-get remove -y --purge slack-desktop",
@@ -1886,7 +1887,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall FileZilla",
             "Removes FileZilla plus ~/.config/filezilla and ~/.cache/filezilla so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "filezilla", &[".config/filezilla", ".cache/filezilla"])),
         )
         .destructive()
@@ -1894,7 +1895,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Audacity",
             "Removes Audacity plus ~/.config/audacity and ~/.cache/audacity so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "audacity", &[".config/audacity", ".cache/audacity"])),
         )
         .destructive()
@@ -1902,7 +1903,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Firefox",
             "Removes /opt/firefox, the /usr/local/bin/firefox launcher, and ~/.mozilla/firefox so a fresh install has no conflicts.",
-            9,
+            10,
             script(firefox_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1910,7 +1911,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Brave Browser",
             "Removes Brave Browser plus ~/.config/BraveSoftware and ~/.cache/BraveSoftware so a fresh install has no conflicts.",
-            9,
+            10,
             script(brave_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1918,7 +1919,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Microsoft Edge",
             "Removes Edge plus ~/.config/microsoft-edge and ~/.cache/microsoft-edge so a fresh install has no conflicts.",
-            9,
+            10,
             script(edge_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1926,7 +1927,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Chromium",
             "Removes Chromium plus ~/.config/chromium and ~/.cache/chromium so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "chromium", &[".config/chromium", ".cache/chromium"])),
         )
         .destructive()
@@ -1934,7 +1935,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Tor Browser",
             "Removes /opt/tor-browser, the /usr/local/bin/tor-browser launcher, and ~/.config/tor-browser so a fresh install has no conflicts.",
-            9,
+            10,
             script(tor_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1942,7 +1943,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Bitwarden",
             "Removes Bitwarden plus ~/.config/Bitwarden Desktop and ~/.cache/Bitwarden Desktop so a fresh install has no conflicts.",
-            9,
+            10,
             script(bitwarden_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1950,7 +1951,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall KeePassXC",
             "Removes KeePassXC plus ~/.config/keepassxc and ~/.cache/keepassxc so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "keepassxc", &[".config/keepassxc", ".cache/keepassxc"])),
         )
         .destructive()
@@ -1958,7 +1959,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Thunderbird",
             "Removes Thunderbird plus ~/.config/thunderbird and ~/.cache/thunderbird so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "thunderbird", &[".config/thunderbird", ".cache/thunderbird"])),
         )
         .destructive()
@@ -1966,7 +1967,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Signal Desktop",
             "Removes Signal Desktop plus ~/.config/Signal and ~/.cache/Signal so a fresh install has no conflicts.",
-            9,
+            10,
             script(signal_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1974,7 +1975,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall WhatsApp Desktop",
             "Removes WhatsApp Desktop plus ~/.config/whatsapp-for-linux and ~/.cache/whatsapp-for-linux so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "whatsapp-for-linux", &[".config/whatsapp-for-linux", ".cache/whatsapp-for-linux"])),
         )
         .destructive()
@@ -1982,7 +1983,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Joplin",
             "Removes /opt/joplin.AppImage, the /usr/local/bin/joplin launcher, and ~/.config/Joplin so a fresh install has no conflicts.",
-            9,
+            10,
             script(joplin_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1990,7 +1991,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Calibre",
             "Removes /opt/calibre, the /usr/local/bin/calibre launcher, and ~/.config/calibre so a fresh install has no conflicts.",
-            9,
+            10,
             script(calibre_uninstall_cmd(pm)),
         )
         .destructive()
@@ -1998,7 +1999,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall LibreOffice",
             "Removes LibreOffice plus ~/.config/libreoffice and ~/.cache/libreoffice so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "libreoffice", &[".config/libreoffice", ".cache/libreoffice"])),
         )
         .destructive()
@@ -2006,7 +2007,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Okular",
             "Removes Okular plus ~/.config/okular and ~/.cache/okular so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "okular", &[".config/okular", ".cache/okular"])),
         )
         .destructive()
@@ -2014,7 +2015,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Krita",
             "Removes Krita plus ~/.config/krita and ~/.cache/krita so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "krita", &[".config/krita", ".cache/krita"])),
         )
         .destructive()
@@ -2022,7 +2023,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Darktable",
             "Removes Darktable plus ~/.config/darktable and ~/.cache/darktable so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "darktable", &[".config/darktable", ".cache/darktable"])),
         )
         .destructive()
@@ -2030,7 +2031,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Kdenlive",
             "Removes Kdenlive plus ~/.config/kdenlive and ~/.cache/kdenlive so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "kdenlive", &[".config/kdenlive", ".cache/kdenlive"])),
         )
         .destructive()
@@ -2038,7 +2039,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Shotcut",
             "Removes Shotcut plus ~/.config/shotcut and ~/.cache/shotcut so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "shotcut", &[".config/shotcut", ".cache/shotcut"])),
         )
         .destructive()
@@ -2046,7 +2047,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Insomnia",
             "Removes /opt/insomnia.AppImage, the /usr/local/bin/insomnia launcher, and ~/.config/Insomnia so a fresh install has no conflicts.",
-            9,
+            10,
             script(insomnia_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2054,7 +2055,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Bruno",
             "Removes /opt/bruno.AppImage, the /usr/local/bin/bruno launcher, and ~/.config/bruno so a fresh install has no conflicts.",
-            9,
+            10,
             script(bruno_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2062,7 +2063,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall pgAdmin",
             "Removes pgAdmin plus ~/.config/pgadmin and ~/.cache/pgadmin so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "pgadmin4", &[".config/pgadmin", ".cache/pgadmin"])),
         )
         .destructive()
@@ -2070,7 +2071,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall MySQL Workbench",
             "Removes MySQL Workbench plus ~/.config/mysql-workbench and ~/.cache/mysql-workbench so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "mysql-workbench", &[".config/mysql-workbench", ".cache/mysql-workbench"])),
         )
         .destructive()
@@ -2078,7 +2079,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall MongoDB Compass",
             "Removes MongoDB Compass plus ~/.config/MongoDB Compass and ~/.cache/MongoDB Compass so a fresh install has no conflicts.",
-            9,
+            10,
             script(mongodbcompass_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2086,7 +2087,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall RedisInsight",
             "Removes /opt/redisinsight, the /usr/local/bin/redisinsight launcher, and ~/.config/RedisInsight so a fresh install has no conflicts.",
-            9,
+            10,
             script(redisinsight_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2094,7 +2095,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Rclone",
             "Removes Rclone plus ~/.config/rclone and ~/.cache/rclone so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "rclone", &[".config/rclone", ".cache/rclone"])),
         )
         .destructive()
@@ -2102,7 +2103,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Restic",
             "Removes Restic plus ~/.config/restic and ~/.cache/restic so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "restic", &[".config/restic", ".cache/restic"])),
         )
         .destructive()
@@ -2110,7 +2111,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Timeshift",
             "Removes Timeshift plus ~/.config/timeshift and ~/.cache/timeshift so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "timeshift", &[".config/timeshift", ".cache/timeshift"])),
         )
         .destructive()
@@ -2118,7 +2119,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall BorgBackup",
             "Removes BorgBackup plus ~/.config/borg and ~/.cache/borg so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "borgbackup", &[".config/borg", ".cache/borg"])),
         )
         .destructive()
@@ -2126,7 +2127,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Syncthing",
             "Removes Syncthing plus ~/.config/syncthing and ~/.cache/syncthing so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "syncthing", &[".config/syncthing", ".cache/syncthing"])),
         )
         .destructive()
@@ -2134,7 +2135,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Dropbox",
             "Removes /opt/dropbox, the /usr/local/bin/dropbox launcher, and ~/.dropbox, ~/.config/dropbox, ~/.cache/dropbox so a fresh install has no conflicts.",
-            9,
+            10,
             script(dropbox_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2142,7 +2143,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Nextcloud Client",
             "Removes Nextcloud plus ~/.config/nextcloud and ~/.cache/nextcloud so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "nextcloud-client", &[".config/nextcloud", ".cache/nextcloud"])),
         )
         .destructive()
@@ -2150,7 +2151,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Lutris",
             "Removes Lutris plus ~/.config/lutris and ~/.cache/lutris so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "lutris", &[".config/lutris", ".cache/lutris"])),
         )
         .destructive()
@@ -2158,7 +2159,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Heroic Games Launcher",
             "Removes /opt/heroic.AppImage, the /usr/local/bin/heroic launcher, and ~/.config/heroic so a fresh install has no conflicts.",
-            9,
+            10,
             script(heroic_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2166,7 +2167,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall VirtualBox",
             "Removes VirtualBox plus ~/.config/VirtualBox and ~/.cache/VirtualBox so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "virtualbox", &[".config/VirtualBox", ".cache/VirtualBox"])),
         )
         .destructive()
@@ -2174,7 +2175,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Vagrant",
             "Removes Vagrant plus ~/.config/vagrant and ~/.cache/vagrant so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "vagrant", &[".config/vagrant", ".cache/vagrant"])),
         )
         .destructive()
@@ -2182,7 +2183,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall QEMU",
             "Removes QEMU plus ~/.config/qemu and ~/.cache/qemu so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "qemu", &[".config/qemu", ".cache/qemu"])),
         )
         .destructive()
@@ -2190,7 +2191,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall LXD",
             "Removes LXD plus ~/.config/lxd and ~/.cache/lxd so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "lxd", &[".config/lxd", ".cache/lxd"])),
         )
         .destructive()
@@ -2198,7 +2199,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Buildah",
             "Removes Buildah plus ~/.config/buildah and ~/.cache/buildah so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "buildah", &[".config/buildah", ".cache/buildah"])),
         )
         .destructive()
@@ -2206,7 +2207,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Skopeo",
             "Removes Skopeo plus ~/.config/skopeo and ~/.cache/skopeo so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "skopeo", &[".config/skopeo", ".cache/skopeo"])),
         )
         .destructive()
@@ -2214,7 +2215,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall WireGuard",
             "Removes WireGuard tools plus ~/.config/wireguard and ~/.cache/wireguard so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "wireguard-tools", &[".config/wireguard", ".cache/wireguard"])),
         )
         .destructive()
@@ -2222,7 +2223,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall OpenVPN",
             "Removes OpenVPN plus ~/.config/openvpn and ~/.cache/openvpn so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "openvpn", &[".config/openvpn", ".cache/openvpn"])),
         )
         .destructive()
@@ -2230,7 +2231,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Tailscale",
             "Removes Tailscale plus /var/lib/tailscale and /etc/tailscale so a fresh install has no conflicts.",
-            9,
+            10,
             script(tailscale_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2238,7 +2239,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Headscale",
             "Removes /usr/local/bin/headscale, /etc/headscale, and /var/lib/headscale so a fresh install has no conflicts.",
-            9,
+            10,
             script(headscale_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2246,7 +2247,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall ZeroTier",
             "Removes ZeroTier plus /var/lib/zerotier-one and /etc/zerotier-one so a fresh install has no conflicts.",
-            9,
+            10,
             script(zerotier_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2254,7 +2255,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Pi-hole",
             "Removes /etc/pihole, /etc/lighttpd, /var/www/admin, and /var/log/pihole so a fresh install has no conflicts.",
-            9,
+            10,
             script(pihole_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2262,7 +2263,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall AdGuard Home",
             "Removes /opt/adguardhome, /etc/adguardhome, and /var/lib/adguardhome so a fresh install has no conflicts.",
-            9,
+            10,
             script(adguardhome_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2270,7 +2271,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Cockpit",
             "Removes Cockpit plus ~/.config/cockpit and ~/.cache/cockpit so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "cockpit", &[".config/cockpit", ".cache/cockpit"])),
         )
         .destructive()
@@ -2278,7 +2279,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Grafana",
             "Removes Grafana plus ~/.config/grafana and ~/.cache/grafana so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "grafana", &[".config/grafana", ".cache/grafana"])),
         )
         .destructive()
@@ -2286,7 +2287,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall PostgreSQL",
             "Removes PostgreSQL plus ~/.config/postgresql and ~/.cache/postgresql so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "postgresql", &[".config/postgresql", ".cache/postgresql"])),
         )
         .destructive()
@@ -2294,7 +2295,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall MySQL/MariaDB",
             "Removes MariaDB plus ~/.config/mariadb and ~/.cache/mariadb so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "mariadb", &[".config/mariadb", ".cache/mariadb"])),
         )
         .destructive()
@@ -2302,7 +2303,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall MongoDB",
             "Removes MongoDB plus ~/.config/mongodb and ~/.cache/mongodb so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "mongodb", &[".config/mongodb", ".cache/mongodb"])),
         )
         .destructive()
@@ -2310,7 +2311,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Redis",
             "Removes Redis plus ~/.config/redis and ~/.cache/redis so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "redis", &[".config/redis", ".cache/redis"])),
         )
         .destructive()
@@ -2318,7 +2319,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall Memcached",
             "Removes Memcached plus ~/.config/memcached and ~/.cache/memcached so a fresh install has no conflicts.",
-            9,
+            10,
             script(repo_uninstall(pm, "memcached", &[".config/memcached", ".cache/memcached"])),
         )
         .destructive()
@@ -2326,7 +2327,7 @@ pub fn build() -> Vec<Task> {
         Task::new(
             "Uninstall NVIDIA Drivers",
             "Removes the NVIDIA driver package plus ~/.nvidia, ~/.cache/nvidia, /etc/nvidia, and /var/lib/nvidia so a fresh install has no conflicts.",
-            9,
+            10,
             script(nvidia_uninstall_cmd(pm)),
         )
         .destructive()
@@ -2990,6 +2991,237 @@ pub fn build() -> Vec<Task> {
             script(r#"if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then git branch --sort=-committerdate --format='%(committerdate:short) %(refname:short)' | head -20; else echo 'Not inside a git repository.'; fi"#),
         ),
         Task::new(
+            "Install mcfly",
+            "Installs mcfly, a shell history search tool with fuzzy matching.",
+            5,
+            script("command -v mcfly >/dev/null 2>&1 || curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sh -s -- --git cantino/mcfly"),
+        )
+        .with_check(Check::Bin("mcfly".to_string())),
+        Task::new(
+            "Install atuin",
+            "Installs atuin, syncs shell history across machines with encrypted sync.",
+            5,
+            script("command -v atuin >/dev/null 2>&1 || curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh"),
+        )
+        .with_check(Check::Bin("atuin".to_string())),
+        Task::new(
+            "Install zellij",
+            "Installs zellij, a terminal workspace with panes, tabs, and plugins.",
+            5,
+            script(pkg(pm, "zellij")),
+        )
+        .with_check(Check::Bin("zellij".to_string())),
+        Task::new(
+            "Install lsd",
+            "Installs lsd, an ls replacement with icons and colors.",
+            5,
+            script(pkg_alias(pm, "lsd", "lsd", "lsd", "lsd")),
+        )
+        .with_check(Check::Bin("lsd".to_string())),
+        Task::new(
+            "Install procs",
+            "Installs procs, a modern replacement for ps with colored output.",
+            5,
+            script(pkg(pm, "procs")),
+        )
+        .with_check(Check::Bin("procs".to_string())),
+        Task::new(
+            "Install sd",
+            "Installs sd, an intuitive find & replace alternative to sed.",
+            5,
+            script(pkg(pm, "sd")),
+        )
+        .with_check(Check::Bin("sd".to_string())),
+        Task::new(
+            "Install xh",
+            "Installs xh, a friendly and fast alternative to curl.",
+            5,
+            script(pkg(pm, "xh")),
+        )
+        .with_check(Check::Bin("xh".to_string())),
+        Task::new(
+            "Install duf",
+            "Installs duf, a disk usage tool with colors and formatting.",
+            5,
+            script(pkg(pm, "duf")),
+        )
+        .with_check(Check::Bin("duf".to_string())),
+        Task::new(
+            "Install dust",
+            "Installs dust, an intuitive disk usage visualization like du + df.",
+            5,
+            script(pkg(pm, "dust")),
+        )
+        .with_check(Check::Bin("dust".to_string())),
+        Task::new(
+            "Install tokei",
+            "Installs tokei, counts lines of code quickly per language.",
+            5,
+            script(pkg(pm, "tokei")),
+        )
+        .with_check(Check::Bin("tokei".to_string())),
+        Task::new(
+            "Install cloc",
+            "Installs cloc, counts blank lines, comment lines, and physical lines of code.",
+            5,
+            script(pkg(pm, "cloc")),
+        )
+        .with_check(Check::Bin("cloc".to_string())),
+        Task::new(
+            "Install yq",
+            "Installs yq, a portable YAML processor like jq.",
+            5,
+            script(pkg_alias(pm, "yq", "yq", "yq", "yq")),
+        )
+        .with_any_check(&["yq", "yq-go"]),
+        Task::new(
+            "Install jid",
+            "Installs jid, an incremental JSON finder for filtering JSON interactively.",
+            5,
+            script(pkg(pm, "jid")),
+        )
+        .with_check(Check::Bin("jid".to_string())),
+        Task::new(
+            "Install fx",
+            "Installs fx, a terminal JSON viewer and processor.",
+            5,
+            script(pkg(pm, "fx")),
+        )
+        .with_check(Check::Bin("fx".to_string())),
+        Task::new(
+            "Install gron",
+            "Installs gron, makes JSON greppable by flattening to assignments.",
+            5,
+            script(pkg(pm, "gron")),
+        )
+        .with_check(Check::Bin("gron".to_string())),
+        Task::new(
+            "Install jo",
+            "Installs jo, creates JSON from shell output easily.",
+            5,
+            script(pkg(pm, "jo")),
+        )
+        .with_check(Check::Bin("jo".to_string())),
+        Task::new(
+            "Install shfmt",
+            "Installs shfmt, formats shell scripts consistently.",
+            5,
+            script(pkg(pm, "shfmt")),
+        )
+        .with_check(Check::Bin("shfmt".to_string())),
+        Task::new(
+            "Install hadolint",
+            "Installs hadolint, a Dockerfile linter for best practices.",
+            5,
+            script(pkg(pm, "hadolint")),
+        )
+        .with_check(Check::Bin("hadolint".to_string())),
+        Task::new(
+            "Install golangci-lint",
+            "Installs golangci-lint, a Go linters aggregator.",
+            5,
+            script("command -v golangci-lint >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest"),
+        )
+        .with_check(Check::Bin("golangci-lint".to_string())),
+        Task::new(
+            "Install ruff",
+            "Installs ruff, a fast Python linter and formatter written in Rust.",
+            5,
+            script("command -v ruff >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh && uv tool install ruff"),
+        )
+        .with_check(Check::Bin("ruff".to_string())),
+        Task::new(
+            "Install mypy",
+            "Installs mypy, a static type checker for Python.",
+            5,
+            script(pkg(pm, "mypy")),
+        )
+        .with_check(Check::Bin("mypy".to_string())),
+        Task::new(
+            "Install pyright",
+            "Installs pyright, a fast type checker for Python via npm.",
+            5,
+            script("command -v pyright >/dev/null 2>&1 || npm install -g pyright"),
+        )
+        .with_check(Check::Bin("pyright".to_string())),
+        Task::new(
+            "Install black",
+            "Installs black, the uncompromising Python code formatter.",
+            5,
+            script(pkg(pm, "black")),
+        )
+        .with_check(Check::Bin("black".to_string())),
+        Task::new(
+            "Install eslint",
+            "Installs ESLint, a pluggable JavaScript/TypeScript linter via npm.",
+            5,
+            script("command -v eslint >/dev/null 2>&1 || npm install -g eslint"),
+        )
+        .with_check(Check::Bin("eslint".to_string())),
+        Task::new(
+            "Install prettier",
+            "Installs Prettier, an opinionated code formatter via npm.",
+            5,
+            script("command -v prettier >/dev/null 2>&1 || npm install -g prettier"),
+        )
+        .with_check(Check::Bin("prettier".to_string())),
+        Task::new(
+            "Install markdownlint",
+            "Installs markdownlint, a Markdown linting tool via npm.",
+            5,
+            script("command -v markdownlint >/dev/null 2>&1 || npm install -g markdownlint-cli"),
+        )
+        .with_check(Check::Bin("markdownlint".to_string())),
+        Task::new(
+            "Install commitlint",
+            "Installs commitlint, lints commit messages against conventional commits.",
+            5,
+            script("command -v commitlint >/dev/null 2>&1 || npm install -g @commitlint/cli @commitlint/config-conventional"),
+        )
+        .with_check(Check::Bin("commitlint".to_string())),
+        Task::new(
+            "Install lefthook",
+            "Installs lefthook, a fast and powerful Git hooks manager.",
+            5,
+            script(pkg(pm, "lefthook")),
+        )
+        .with_check(Check::Bin("lefthook".to_string())),
+        Task::new(
+            "Install tig",
+            "Installs tig, a text-mode interface for git.",
+            5,
+            script(pkg(pm, "tig")),
+        )
+        .with_check(Check::Bin("tig".to_string())),
+        Task::new(
+            "Install diff-so-fancy",
+            "Installs diff-so-fancy, makes git diffs more readable.",
+            5,
+            script("command -v diff-so-fancy >/dev/null 2>&1 || npm install -g diff-so-fancy"),
+        )
+        .with_check(Check::Bin("diff-so-fancy".to_string())),
+        Task::new(
+            "Install lazydocker",
+            "Installs lazydocker, a terminal UI for Docker and Docker Compose.",
+            5,
+            script("command -v lazydocker >/dev/null 2>&1 || curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | sh"),
+        )
+        .with_check(Check::Bin("lazydocker".to_string())),
+        Task::new(
+            "Install dive",
+            "Installs dive, explores Docker images and layer contents.",
+            5,
+            script(pkg(pm, "dive")),
+        )
+        .with_check(Check::Bin("dive".to_string())),
+        Task::new(
+            "Install stern",
+            "Installs stern, tails multiple Kubernetes pods and containers at once.",
+            5,
+            script(pkg(pm, "stern")),
+        )
+        .with_check(Check::Bin("stern".to_string())),
+        Task::new(
             "Install AWS CLI",
             "Installs the AWS CLI v2 with the official installer.",
             6,
@@ -3086,6 +3318,88 @@ pub fn build() -> Vec<Task> {
         )
         .with_timeout(30),
         Task::new(
+            "Install Pulumi",
+            "Installs Pulumi infrastructure-as-code CLI via the official installer.",
+            6,
+            script("command -v pulumi >/dev/null 2>&1 || curl -fsSL https://get.pulumi.com | sh"),
+        )
+        .with_check(Check::Bin("pulumi".to_string())),
+        Task::new(
+            "Install Bicep",
+            "Installs Azure Bicep CLI for Azure infrastructure-as-code.",
+            6,
+            script("command -v bicep >/dev/null 2>&1 || $SUDO az bicep install"),
+        )
+        .with_check(Check::Bin("bicep".to_string())),
+        Task::new(
+            "Install AWS SAM CLI",
+            "Installs AWS Serverless Application Model CLI for building serverless apps.",
+            6,
+            script("command -v sam >/dev/null 2>&1 || curl -fsSL https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip -o /tmp/sam.zip && $SUDO unzip -o /tmp/sam.zip -d /usr/local/bin && rm -f /tmp/sam.zip"),
+        )
+        .with_check(Check::Bin("sam".to_string())),
+        Task::new(
+            "Install Serverless Framework",
+            "Installs Serverless Framework via npm for serverless deployments.",
+            6,
+            script("command -v serverless >/dev/null 2>&1 || npm install -g serverless"),
+        )
+        .with_check(Check::Bin("serverless".to_string())),
+        Task::new(
+            "Install Cloudflare Wrangler",
+            "Installs Wrangler CLI for Cloudflare Workers development.",
+            6,
+            script("command -v wrangler >/dev/null 2>&1 || npm install -g wrangler"),
+        )
+        .with_check(Check::Bin("wrangler".to_string())),
+        Task::new(
+            "Install AWS CDK",
+            "Installs AWS Cloud Development Kit via npm.",
+            6,
+            script("command -v cdk >/dev/null 2>&1 || npm install -g aws-cdk"),
+        )
+        .with_check(Check::Bin("cdk".to_string())),
+        Task::new(
+            "Install Google Cloud SDK components",
+            "Updates and adds components to an existing Google Cloud SDK installation.",
+            6,
+            script("if command -v gcloud >/dev/null 2>&1; then gcloud components update; else echo 'Google Cloud CLI is not installed (Cloud tab).'; fi"),
+        )
+        .with_check(Check::Bin("gcloud".to_string())),
+        Task::new(
+            "Azure resource list",
+            "Lists resources in the active Azure subscription.",
+            6,
+            script(r#"if command -v az >/dev/null 2>&1; then az resource list --output table 2>&1 | head -40; else echo 'Azure CLI is not installed (Cloud tab).'; fi"#),
+        ),
+        Task::new(
+            "AWS regions and availability zones",
+            "Lists AWS regions and availability zones for your account.",
+            6,
+            script(r#"if command -v aws >/dev/null 2>&1; then aws ec2 describe-regions --output table 2>&1; else echo 'AWS CLI is not installed (Cloud tab).'; fi"#),
+        ),
+        Task::new(
+            "Install kubectl (cloud)",
+            "Installs the Kubernetes CLI via your package manager.",
+            6,
+            script(pkg_alias(pm, "kubectl", "kubernetes-client", "kubectl", "kubectl")),
+        )
+        .with_check(Check::Bin("kubectl".to_string())),
+        Task::new(
+            "Install Helm (cloud)",
+            "Installs Helm with the official installer script.",
+            6,
+            script("curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"),
+        )
+        .with_check(Check::Bin("helm".to_string())),
+        Task::new(
+            "Install kubeconform",
+            "Installs kubeconform for validating Kubernetes manifests.",
+            6,
+            script(pkg(pm, "kubeconform")),
+        )
+        .with_check(Check::Bin("kubeconform".to_string())),
+Task::new(
             "Install nmap",
             "Installs nmap for network discovery and port scanning.",
             7,
@@ -3353,6 +3667,227 @@ pub fn build() -> Vec<Task> {
             8,
             script(r#"if command -v docker >/dev/null 2>&1; then docker info --format 'Server: {{.ServerVersion}}\nStorage: {{.Driver}}\nContainers: {{.Containers}} (running {{.ContainersRunning}})\nImages: {{.Images}}' 2>&1; elif command -v podman >/dev/null 2>&1; then podman info --format '{{.Host.Hostname}} {{.Version.Version}}' 2>&1; else echo 'No Docker or Podman runtime found.'; fi"#),
         ),
+        Task::new(
+            "Install gitui",
+            "Installs gitui, a terminal user interface for git.",
+            5,
+            script(pkg(pm, "gitui")),
+        )
+        .with_check(Check::Bin("gitui".to_string())),
+        Task::new(
+            "Install ghq",
+            "Installs ghq for managing local git repositories.",
+            5,
+            script(pkg(pm, "ghq")),
+        )
+        .with_check(Check::Bin("ghq".to_string())),
+        Task::new(
+            "Install act",
+            "Installs act to run GitHub Actions workflows locally.",
+            5,
+            script("command -v act >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/nektos/act/master/install.sh | $SUDO bash"),
+        )
+        .with_check(Check::Bin("act".to_string())),
+        Task::new(
+            "Install commitizen",
+            "Installs commitizen for interactive conventional commit messages via npm.",
+            5,
+            script("command -v cz >/dev/null 2>&1 || npm install -g commitizen cz-conventional-changelog"),
+        )
+        .with_any_check(&["cz", "commitizen"]),
+        Task::new(
+            "Git diff stat",
+            "Shows a short summary of changed files in the current repository.",
+            5,
+            script(r#"if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then git diff --stat; else echo 'Not inside a git repository.'; fi"#),
+        ),
+        Task::new(
+            "Git stash list",
+            "Lists stashed changes in the current repository.",
+            5,
+            script(r#"if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then git stash list; else echo 'Not inside a git repository.'; fi"#),
+        ),
+        Task::new(
+            "Lines of code by language",
+            "Counts lines of code grouped by language using tokei or cloc.",
+            5,
+            script(r#"if command -v tokei >/dev/null 2>&1; then tokei .; elif command -v cloc >/dev/null 2>&1; then cloc .; else echo 'Install tokei or cloc (Dev tools tab).' ; fi"#),
+        )
+        .with_timeout(120),
+        Task::new(
+            "Install doctl",
+            "Installs the DigitalOcean CLI via the official installer.",
+            6,
+            script("command -v doctl >/dev/null 2>&1 || curl -fsSL https://github.com/digitalocean/doctl/releases/latest/download/doctl-*-linux-amd64.tar.gz -o /tmp/doctl.tar.gz && $SUDO tar -xzf /tmp/doctl.tar.gz -C /usr/local/bin && rm -f /tmp/doctl.tar.gz"),
+        )
+        .with_check(Check::Bin("doctl".to_string())),
+        Task::new(
+            "Install flyctl",
+            "Installs the Fly.io CLI via the official installer.",
+            6,
+            script("command -v flyctl >/dev/null 2>&1 || curl -L https://fly.io/install.sh | sh"),
+        )
+        .with_any_check(&["flyctl", "fly"]),
+        Task::new(
+            "Install Vercel CLI",
+            "Installs the Vercel CLI via npm for frontend deployments.",
+            6,
+            script("command -v vercel >/dev/null 2>&1 || npm install -g vercel"),
+        )
+        .with_check(Check::Bin("vercel".to_string())),
+        Task::new(
+            "Install Netlify CLI",
+            "Installs the Netlify CLI via npm for site deployments.",
+            6,
+            script("command -v netlify >/dev/null 2>&1 || npm install -g netlify-cli"),
+        )
+        .with_check(Check::Bin("netlify".to_string())),
+        Task::new(
+            "Kubernetes nodes",
+            "Lists cluster nodes with roles, versions, and readiness.",
+            6,
+            script(r#"if command -v kubectl >/dev/null 2>&1; then kubectl get nodes -o wide 2>&1; else echo 'kubectl is not installed (Applications tab).'; fi"#),
+        )
+        .with_timeout(30),
+        Task::new(
+            "Helm repositories",
+            "Lists configured Helm repositories.",
+            6,
+            script(r#"if command -v helm >/dev/null 2>&1; then helm repo list 2>&1; else echo 'Helm is not installed (Applications tab).'; fi"#),
+        ),
+        Task::new(
+            "AWS S3 buckets",
+            "Lists S3 buckets in the current AWS account.",
+            6,
+            script(r#"if command -v aws >/dev/null 2>&1; then aws s3 ls 2>&1; else echo 'AWS CLI is not installed (Cloud tab).'; fi"#),
+        ),
+        Task::new(
+            "Install skaffold",
+            "Installs Skaffold for fast Kubernetes development workflows.",
+            8,
+            script("command -v skaffold >/dev/null 2>&1 || curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && $SUDO install skaffold /usr/local/bin/ && rm -f skaffold"),
+        )
+        .with_check(Check::Bin("skaffold".to_string())),
+        Task::new(
+            "Install kustomize",
+            "Installs Kustomize for Kubernetes manifest customization.",
+            8,
+            script("command -v kustomize >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash"),
+        )
+        .with_check(Check::Bin("kustomize".to_string())),
+        Task::new(
+            "Install helmfile",
+            "Installs helmfile for declarative Helm release management.",
+            8,
+            script("command -v helmfile >/dev/null 2>&1 || curl -fsSL https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64 -o /tmp/helmfile && $SUDO install /tmp/helmfile /usr/local/bin/helmfile && rm -f /tmp/helmfile"),
+        )
+        .with_check(Check::Bin("helmfile".to_string())),
+        Task::new(
+            "Install tflint",
+            "Installs TFLint for Terraform linting.",
+            8,
+            script("command -v tflint >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash"),
+        )
+        .with_check(Check::Bin("tflint".to_string())),
+        Task::new(
+            "Docker volumes",
+            "Lists Docker volumes and their drivers.",
+            8,
+            script(r#"if command -v docker >/dev/null 2>&1; then docker volume ls; else echo 'Docker is not installed (Applications tab).'; fi"#),
+        ),
+        Task::new(
+            "Docker networks",
+            "Lists Docker networks and their drivers.",
+            8,
+            script(r#"if command -v docker >/dev/null 2>&1; then docker network ls; else echo 'Docker is not installed (Applications tab).'; fi"#),
+        ),
+        Task::new(
+            "Kubernetes services",
+            "Lists services across all namespaces.",
+            8,
+            script(r#"if command -v kubectl >/dev/null 2>&1; then kubectl get svc -A -o wide 2>&1; else echo 'kubectl is not installed (Applications tab).'; fi"#),
+        )
+        .with_timeout(30),
+        Task::new(
+            "Kubernetes deployments",
+            "Lists deployments across all namespaces.",
+            8,
+            script(r#"if command -v kubectl >/dev/null 2>&1; then kubectl get deploy -A 2>&1; else echo 'kubectl is not installed (Applications tab).'; fi"#),
+        )
+        .with_timeout(30),
+        Task::new(
+            "Install GameMode",
+            "Installs GameMode for optimising Linux game performance.",
+            9,
+            script(pkg(pm, "gamemode")),
+        )
+        .with_check(Check::Bin("gamemoded".to_string())),
+        Task::new(
+            "Install MangoHud",
+            "Installs MangoHud for in-game performance overlay.",
+            9,
+            script(pkg(pm, "mangohud")),
+        )
+        .with_check(Check::Bin("mangohud".to_string())),
+        Task::new(
+            "Install Wine",
+            "Installs Wine for running Windows games and applications.",
+            9,
+            script(pkg(pm, "wine")),
+        )
+        .with_check(Check::Bin("wine".to_string())),
+        Task::new(
+            "Install Winetricks",
+            "Installs Winetricks helper for Wine prefixes.",
+            9,
+            script(pkg(pm, "winetricks")),
+        )
+        .with_check(Check::Bin("winetricks".to_string())),
+        Task::new(
+            "Install RetroArch",
+            "Installs RetroArch multi-system emulator.",
+            9,
+            script(pkg(pm, "retroarch")),
+        )
+        .with_check(Check::Bin("retroarch".to_string())),
+        Task::new(
+            "Install ScummVM",
+            "Installs ScummVM for classic adventure games.",
+            9,
+            script(pkg(pm, "scummvm")),
+        )
+        .with_check(Check::Bin("scummvm".to_string())),
+        Task::new(
+            "GPU information",
+            "Shows detected GPUs and their drivers.",
+            9,
+            script(r#"if command -v lspci >/dev/null 2>&1; then lspci | grep -iE 'vga|3d|display'; else echo 'lspci is not installed.'; fi"#),
+        ),
+        Task::new(
+            "Vulkan information",
+            "Shows Vulkan instance and device details.",
+            9,
+            script(r#"if command -v vulkaninfo >/dev/null 2>&1; then vulkaninfo --summary 2>&1 | head -40; else echo 'vulkaninfo is not installed (install vulkan-tools).'; fi"#),
+        ),
+        Task::new(
+            "GameMode status",
+            "Checks whether GameMode is installed and active.",
+            9,
+            script(r#"if command -v gamemoded >/dev/null 2>&1; then gamemoded -s 2>&1; else echo 'GameMode is not installed (Games tab).'; fi"#),
+        ),
+        Task::new(
+            "List Wine prefixes",
+            "Lists Wine prefixes in ~/.wine and ~/.local/share/wineprefixes.",
+            9,
+            script(r#"for d in "$HOME/.wine" "$HOME/.local/share/wineprefixes"/*; do [ -d "$d" ] && echo "$d"; done; [ -d "$HOME/.wine" ] || echo 'No Wine prefixes found.' "#),
+        ),
+        Task::new(
+            "Steam library size",
+            "Estimates the size of the Steam library and common folders.",
+            9,
+            script(r#"if [ -d "$HOME/.steam" ] || [ -d "$HOME/.local/share/Steam" ]; then du -sh "$HOME/.steam" "$HOME/.local/share/Steam" 2>/dev/null; else echo 'Steam is not installed (Applications tab).'; fi"#),
+        )
+        .with_timeout(60),
     ];
     for (i, p) in PALETTES.iter().enumerate() {
         tasks.push(Task::new(p.name, p.desc, 2, Action::Theme(i)));
@@ -3411,6 +3946,7 @@ fn tab_index(section: &str) -> Option<usize> {
         "cloud" | "cloud engineering" | "cloud engineer" => Some(6),
         "security" | "sec" | "cyber" | "cybersecurity" => Some(7),
         "devops" | "dev ops" | "ops" => Some(8),
+        "game" | "games" => Some(9),
         _ => None,
     }
 }

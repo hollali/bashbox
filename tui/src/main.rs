@@ -1963,13 +1963,13 @@ mod tests {
     #[test]
     fn narrow_header_keeps_all_tabs_visible() {
         assert_eq!(tab_labels(80)[0], "Apps");
-        assert_eq!(tab_labels(120)[0], "Applications");
+        assert_eq!(tab_labels(130)[0], "Applications");
         let layout = compute_layout(Rect::new(0, 0, 80, 24), 22);
         assert_eq!(layout.tabs.len(), TABS.len());
         assert!(layout.tabs.iter().all(|rect| rect.width > 0));
         assert!(layout.tabs.last().is_some_and(|rect| rect.right() <= 80));
         assert!(layout.details.is_none());
-        assert!(compute_layout(Rect::new(0, 0, 120, 24), 22)
+        assert!(compute_layout(Rect::new(0, 0, 130, 24), 22)
             .details
             .is_some());
     }
