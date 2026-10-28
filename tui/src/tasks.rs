@@ -904,6 +904,45 @@ fn adguardhome_uninstall_cmd(_pm: &str) -> String {
     "$SUDO rm -rf /opt/adguardhome /usr/local/bin/adguardhome /etc/adguardhome /var/lib/adguardhome && echo 'AdGuard Home removed (binary + config/cache).'".to_string()
 }
 
+fn nvidia_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => {
+            "$SUDO apt-get update \
+            && $SUDO apt-get install -y nvidia-driver nvidia-settings nvidia-utils-$(dpkg-query -W -f='${Version}' nvidia-driver 2>/dev/null | cut -d. -f1,2) 2>/dev/null \
+            || $SUDO apt-get install -y nvidia-driver nvidia-settings".to_string()
+        }
+        "dnf" => {
+            "if ! $SUDO dnf repolist enabled 2>/dev/null | grep -q rpmfusion; then \
+            $SUDO dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+            https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; \
+            fi \
+            && $SUDO dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings".to_string()
+        }
+        "zypper" => {
+            "$SUDO zypper --non-interactive install x11-video-nvidiaG05 nvidia-gfxG05-kmp-default nvidia-computeG05 nvidia-settings".to_string()
+        }
+        "pacman" => {
+            "$SUDO pacman -Syu --noconfirm nvidia nvidia-utils nvidia-settings libva-nvidia-driver".to_string()
+        }
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn nvidia_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge 'nvidia-*'",
+        "dnf" => "$SUDO dnf remove -y 'nvidia-*' 'akmod-nvidia' 'xorg-x11-drv-nvidia*'",
+        "zypper" => "$SUDO zypper --non-interactive remove 'x11-video-nvidia*' 'nvidia-gfx*' 'nvidia-compute*' 'nvidia-settings'",
+        "pacman" => "$SUDO pacman -Rns --noconfirm nvidia nvidia-utils nvidia-settings libva-nvidia-driver",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.nvidia\" \"$HOME/.cache/nvidia\" /etc/nvidia /var/lib/nvidia && echo 'NVIDIA drivers removed (package + config/cache).'", remove)
+}
+
+fn nvidia_check_cmd(_pm: &str) -> String {
+    "if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi; else echo 'NVIDIA driver is not installed or nvidia-smi is not available.'; fi".to_string()
+}
+
 pub fn build() -> Vec<Task> {
     let pm = detect_pm();
     let home = home_dir().unwrap_or_default();
@@ -2285,6 +2324,14 @@ pub fn build() -> Vec<Task> {
         .destructive()
         .with_check(Check::Bin("memcached".to_string())),
         Task::new(
+            "Uninstall NVIDIA Drivers",
+            "Removes the NVIDIA driver package plus ~/.nvidia, ~/.cache/nvidia, /etc/nvidia, and /var/lib/nvidia so a fresh install has no conflicts.",
+            9,
+            script(nvidia_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("nvidia-smi".to_string())),
+        Task::new(
             "Refresh dotfiles",
             "Re-links ~/.bashrc, starship.toml and the fastfetch config from ~/.local/share/bashbox.",
             1,
@@ -2598,6 +2645,20 @@ pub fn build() -> Vec<Task> {
             3,
             script("if command -v uptime >/dev/null 2>&1; then uptime -s 2>/dev/null || who -b 2>/dev/null; fi; uptime -p 2>/dev/null || uptime; echo; echo 'Current time: $(date)'"),
         ),
+        Task::new(
+            "Install NVIDIA Drivers",
+            "Installs the NVIDIA graphics driver via your package manager (apt/dnf/zypper/pacman). Reboot after installing.",
+            3,
+            script(nvidia_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("nvidia-smi".to_string())),
+        Task::new(
+            "Check NVIDIA Driver",
+            "Shows the installed NVIDIA driver version and GPU details with nvidia-smi.",
+            3,
+            script(nvidia_check_cmd(pm)),
+        )
+        .with_check(Check::Bin("nvidia-smi".to_string())),
         Task::new(
             "Disk usage",
             "Shows free space on mounted filesystems.",
