@@ -416,7 +416,8 @@ fn antigravity_uninstall_cmd(pm: &str) -> String {
 }
 
 fn opencode_install_cmd(_pm: &str) -> String {
-    "command -v opencode >/dev/null 2>&1 || curl -fsSL https://opencode.ai/install | bash".to_string()
+    "command -v opencode >/dev/null 2>&1 || curl -fsSL https://opencode.ai/install | bash"
+        .to_string()
 }
 
 fn opencode_uninstall_cmd(_pm: &str) -> String {
@@ -511,7 +512,13 @@ fn obsidian_uninstall_cmd(pm: &str) -> String {
 }
 
 fn telegram_install_cmd(pm: &str) -> String {
-    pkg_alias(pm, "telegram-desktop", "telegram-desktop", "telegram", "telegram-desktop")
+    pkg_alias(
+        pm,
+        "telegram-desktop",
+        "telegram-desktop",
+        "telegram",
+        "telegram-desktop",
+    )
 }
 
 fn telegram_uninstall_cmd(pm: &str) -> String {
@@ -533,7 +540,8 @@ fn postman_install_cmd(_pm: &str) -> String {
     && $SUDO cp -r Postman /opt/postman \
     && $SUDO ln -sf /opt/postman/Postman /usr/local/bin/postman \
     && cd - >/dev/null \
-    && rm -rf \"$tmpdir\"".to_string()
+    && rm -rf \"$tmpdir\""
+        .to_string()
 }
 
 fn postman_uninstall_cmd(_pm: &str) -> String {
@@ -586,8 +594,15 @@ fn repo_uninstall(pm: &str, pkg: &str, config_dirs: &[&str]) -> String {
         "pacman" => format!("$SUDO pacman -Rns --noconfirm {}", pkg),
         _ => "echo 'No supported package manager found'".to_string(),
     };
-    let cleanup = config_dirs.iter().map(|d| format!("rm -rf \"{}\"", d)).collect::<Vec<_>>().join(" ");
-    format!("{} && {} && echo '{} removed (package + config/cache).'", remove, cleanup, pkg)
+    let cleanup = config_dirs
+        .iter()
+        .map(|d| format!("rm -rf \"{}\"", d))
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!(
+        "{} && {} && echo '{} removed (package + config/cache).'",
+        remove, cleanup, pkg
+    )
 }
 
 fn firefox_install_cmd(_pm: &str) -> String {
@@ -736,7 +751,8 @@ fn calibre_install_cmd(_pm: &str) -> String {
     && wget -q -nv https://download.calibre-ebook.com/linux-installer.sh -O calibre-installer.sh \
     && $SUDO sh calibre-installer.sh \
     && cd - >/dev/null \
-    && rm -rf \"$tmpdir\"".to_string()
+    && rm -rf \"$tmpdir\""
+        .to_string()
 }
 
 fn calibre_uninstall_cmd(_pm: &str) -> String {
@@ -816,7 +832,8 @@ fn dropbox_install_cmd(_pm: &str) -> String {
     && $SUDO cp -r .dropbox-dist /opt/dropbox \
     && $SUDO ln -sf /opt/dropbox/dropboxd /usr/local/bin/dropbox \
     && cd - >/dev/null \
-    && rm -rf \"$tmpdir\"".to_string()
+    && rm -rf \"$tmpdir\""
+        .to_string()
 }
 
 fn dropbox_uninstall_cmd(_pm: &str) -> String {
