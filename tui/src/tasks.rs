@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::themes::PALETTES;
 
-pub const TABS: [&str; 9] = [
+pub const TABS: [&str; 10] = [
     "Applications",
     "Bash config",
     "Themes",
@@ -21,10 +21,11 @@ pub const TABS: [&str; 9] = [
     "Cloud",
     "Security",
     "DevOps",
+    "Uninstall Apps",
 ];
 
-pub const TAB_SHORT: [&str; 9] = [
-    "Apps", "Bash", "Themes", "System", "Diag", "Dev", "Cloud", "Sec", "Ops",
+pub const TAB_SHORT: [&str; 10] = [
+    "Apps", "Bash", "Themes", "System", "Diag", "Dev", "Cloud", "Sec", "Ops", "Uninst",
 ];
 
 const FONTS: [&str; 4] = ["JetBrainsMono", "FiraCode", "CascadiaCode", "Hack"];
@@ -232,7 +233,8 @@ pub fn detect_pm() -> &'static str {
     "unknown"
 }
 
-fn script(cmds: &str) -> Action {
+fn script<S: AsRef<str>>(cmds: S) -> Action {
+    let cmds = cmds.as_ref();
     Action::Script(format!(
         "SUDO=; [ \"$(id -u)\" -eq 0 ] || SUDO=sudo; ( {} ) 2>&1",
         cmds
@@ -292,6 +294,616 @@ fn cleanup_cmd(pm: &str) -> String {
     }
 }
 
+fn chrome_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+            && $SUDO apt-get install -y ./google-chrome-stable_current_amd64.deb \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "dnf" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
+            && $SUDO dnf localinstall -y ./google-chrome-stable_current_x86_64.rpm \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "zypper" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
+            && $SUDO zypper --non-interactive install ./google-chrome-stable_current_x86_64.rpm \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "pacman" => "echo 'Google Chrome is not in the official repositories (AUR only). Install with an AUR helper (e.g. yay -S google-chrome).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn chrome_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge google-chrome-stable",
+        "dnf" => "$SUDO dnf remove -y google-chrome-stable",
+        "zypper" => "$SUDO zypper --non-interactive remove google-chrome-stable",
+        "pacman" => "$SUDO pacman -Rns --noconfirm google-chrome",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/google-chrome\" \"$HOME/.cache/google-chrome\" /opt/google/chrome && echo 'Google Chrome removed (package + config/cache).'", remove)
+}
+
+fn vlc_install_cmd(pm: &str) -> String {
+    pkg(pm, "vlc")
+}
+
+fn vlc_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge vlc",
+        "dnf" => "$SUDO dnf remove -y vlc",
+        "zypper" => "$SUDO zypper --non-interactive remove vlc",
+        "pacman" => "$SUDO pacman -Rns --noconfirm vlc",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/vlc\" \"$HOME/.cache/vlc\" && echo 'VLC removed (package + config/cache).'", remove)
+}
+
+fn vscode_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://go.microsoft.com/fwlink/?LinkID=760868 -O code-stable_amd64.deb \
+            && $SUDO apt-get install -y ./code-stable_amd64.deb \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "dnf" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://go.microsoft.com/fwlink/?LinkID=760867 -O code-stable_x86_64.rpm \
+            && $SUDO dnf localinstall -y ./code-stable_x86_64.rpm \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "zypper" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://go.microsoft.com/fwlink/?LinkID=760867 -O code-stable_x86_64.rpm \
+            && $SUDO zypper --non-interactive install ./code-stable_x86_64.rpm \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "pacman" => "echo 'Visual Studio Code is in the AUR. Install with an AUR helper (e.g. yay -S code).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn vscode_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge code",
+        "dnf" => "$SUDO dnf remove -y code",
+        "zypper" => "$SUDO zypper --non-interactive remove code",
+        "pacman" => "$SUDO pacman -Rns --noconfirm code",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/Code\" \"$HOME/.cache/Code\" && echo 'VS Code removed (package + config/cache).'", remove)
+}
+
+fn antigravity_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => "$SUDO apt-get install -y antigravity-ide".to_string(),
+        "dnf" => "$SUDO dnf install -y antigravity-ide".to_string(),
+        "zypper" => "$SUDO zypper --non-interactive install antigravity-ide".to_string(),
+        "pacman" => "echo 'Antigravity IDE is in the AUR. Install with an AUR helper (e.g. yay -S antigravity-ide).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn antigravity_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge antigravity-ide".to_string(),
+        "dnf" => "$SUDO dnf remove -y antigravity-ide".to_string(),
+        "zypper" => "$SUDO zypper --non-interactive remove antigravity-ide".to_string(),
+        "pacman" => "$SUDO pacman -Rns --noconfirm antigravity-ide".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    };
+    format!("{} && rm -rf \"$HOME/.config/antigravity-ide\" \"$HOME/.cache/antigravity-ide\" && echo 'Antigravity IDE removed (package + config/cache).'", remove)
+}
+
+fn opencode_install_cmd(_pm: &str) -> String {
+    "command -v opencode >/dev/null 2>&1 || curl -fsSL https://opencode.ai/install | bash".to_string()
+}
+
+fn opencode_uninstall_cmd(_pm: &str) -> String {
+    "bin=$(command -v opencode 2>/dev/null); [ -n \"$bin\" ] && $SUDO rm -f \"$bin\"; rm -rf \"$HOME/.opencode\" \"$HOME/.config/opencode\" && echo 'OpenCode removed (binary + config).'".to_string()
+}
+
+fn discord_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://discord.com/api/download?platform=linux&format=deb -O discord.deb \
+            && $SUDO apt-get install -y ./discord.deb \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "dnf" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://discord.com/api/download?platform=linux&format=tar.gz -O discord.tar.gz \
+            && tar -xzf discord.tar.gz \
+            && $SUDO cp -r Discord /opt/discord \
+            && $SUDO ln -sf /opt/discord/Discord /usr/local/bin/discord \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "zypper" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://discord.com/api/download?platform=linux&format=tar.gz -O discord.tar.gz \
+            && tar -xzf discord.tar.gz \
+            && $SUDO cp -r Discord /opt/discord \
+            && $SUDO ln -sf /opt/discord/Discord /usr/local/bin/discord \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "pacman" => "echo 'Discord is in the AUR. Install with an AUR helper (e.g. yay -S discord).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn discord_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge discord",
+        "dnf" => "$SUDO rm -rf /opt/discord /usr/local/bin/discord",
+        "zypper" => "$SUDO rm -rf /opt/discord /usr/local/bin/discord",
+        "pacman" => "$SUDO pacman -Rns --noconfirm discord",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/discord\" \"$HOME/.cache/discord\" && echo 'Discord removed (package + config/cache).'", remove)
+}
+
+fn spotify_install_cmd(pm: &str) -> String {
+    pkg_alias(pm, "spotify-client", "spotify", "spotify", "spotify")
+}
+
+fn spotify_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge spotify-client",
+        "dnf" => "$SUDO dnf remove -y spotify",
+        "zypper" => "$SUDO zypper --non-interactive remove spotify",
+        "pacman" => "$SUDO pacman -Rns --noconfirm spotify",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/spotify\" \"$HOME/.cache/spotify\" && echo 'Spotify removed (package + config/cache).'", remove)
+}
+
+fn obsidian_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" | "dnf" | "zypper" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://github.com/obsidianmd/obsidian-releases/releases/latest/download/obsidian_amd64.deb -O obsidian.deb \
+            && $SUDO apt-get install -y ./obsidian.deb 2>/dev/null || $SUDO dnf localinstall -y ./obsidian.deb 2>/dev/null || $SUDO zypper --non-interactive install ./obsidian.deb \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "pacman" => "echo 'Obsidian is in the AUR. Install with an AUR helper (e.g. yay -S obsidian).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn obsidian_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge obsidian",
+        "dnf" => "$SUDO dnf remove -y obsidian",
+        "zypper" => "$SUDO zypper --non-interactive remove obsidian",
+        "pacman" => "$SUDO pacman -Rns --noconfirm obsidian",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/obsidian\" \"$HOME/.cache/obsidian\" && echo 'Obsidian removed (package + config/cache).'", remove)
+}
+
+fn telegram_install_cmd(pm: &str) -> String {
+    pkg_alias(pm, "telegram-desktop", "telegram-desktop", "telegram", "telegram-desktop")
+}
+
+fn telegram_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge telegram-desktop",
+        "dnf" => "$SUDO dnf remove -y telegram-desktop",
+        "zypper" => "$SUDO zypper --non-interactive remove telegram",
+        "pacman" => "$SUDO pacman -Rns --noconfirm telegram-desktop",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/TelegramDesktop\" \"$HOME/.cache/TelegramDesktop\" && echo 'Telegram removed (package + config/cache).'", remove)
+}
+
+fn postman_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://dl.pstmn.io/download/latest/linux64 -O postman.tar.gz \
+    && tar -xzf postman.tar.gz \
+    && $SUDO cp -r Postman /opt/postman \
+    && $SUDO ln -sf /opt/postman/Postman /usr/local/bin/postman \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn postman_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/postman /usr/local/bin/postman && rm -rf \"$HOME/.config/Postman\" \"$HOME/.cache/Postman\" && echo 'Postman removed (package + config/cache).'".to_string()
+}
+
+fn dbeaver_install_cmd(pm: &str) -> String {
+    match pm {
+        "apt" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb -O dbeaver.deb \
+            && $SUDO apt-get install -y ./dbeaver.deb \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "dnf" | "zypper" => {
+            "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q https://dbeaver.io/files/dbeaver-ce-latest-x86_64.rpm -O dbeaver.rpm \
+            && $SUDO dnf localinstall -y ./dbeaver.rpm 2>/dev/null || $SUDO zypper --non-interactive install ./dbeaver.rpm \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"".to_string()
+        }
+        "pacman" => "echo 'DBeaver is in the AUR. Install with an AUR helper (e.g. yay -S dbeaver).'".to_string(),
+        _ => "echo 'No supported package manager found'".to_string(),
+    }
+}
+
+fn dbeaver_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge dbeaver-ce",
+        "dnf" => "$SUDO dnf remove -y dbeaver-ce",
+        "zypper" => "$SUDO zypper --non-interactive remove dbeaver-ce",
+        "pacman" => "$SUDO pacman -Rns --noconfirm dbeaver",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.dbeaver\" \"$HOME/.config/DBeaverData\" \"$HOME/.cache/DBeaver\" && echo 'DBeaver removed (package + config/cache).'", remove)
+}
+
+fn repo_install(pm: &str, package: &str) -> String {
+    pkg(pm, package)
+}
+
+fn repo_uninstall(pm: &str, pkg: &str, config_dirs: &[&str]) -> String {
+    let remove = match pm {
+        "apt" => format!("$SUDO apt-get remove -y --purge {}", pkg),
+        "dnf" => format!("$SUDO dnf remove -y {}", pkg),
+        "zypper" => format!("$SUDO zypper --non-interactive remove {}", pkg),
+        "pacman" => format!("$SUDO pacman -Rns --noconfirm {}", pkg),
+        _ => "echo 'No supported package manager found'".to_string(),
+    };
+    let cleanup = config_dirs.iter().map(|d| format!("rm -rf \"{}\"", d)).collect::<Vec<_>>().join(" ");
+    format!("{} && {} && echo '{} removed (package + config/cache).'", remove, cleanup, pkg)
+}
+
+fn firefox_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US -O firefox.tar.bz2 \
+    && tar -xjf firefox.tar.bz2 \
+    && $SUDO cp -r firefox /opt/firefox \
+    && $SUDO ln -sf /opt/firefox/firefox /usr/local/bin/firefox \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn firefox_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/firefox /usr/local/bin/firefox && rm -rf \"$HOME/.mozilla/firefox\" \"$HOME/.cache/mozilla\" && echo 'Firefox removed (binary + config/cache).'".to_string()
+}
+
+fn brave_install_cmd(pm: &str) -> String {
+    if pm == "apt" {
+        "tmpdir=$(mktemp -d) \
+        && cd \"$tmpdir\" \
+        && wget -q https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
+        && $SUDO cp brave-browser-archive-keyring.gpg /etc/apt/trusted.gpg.d/ \
+        && echo \"deb [signed-by=/etc/apt/trusted.gpg.d/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main\" | $SUDO tee /etc/apt/sources.list.d/brave-browser-release.list \
+        && $SUDO apt-get update \
+        && $SUDO apt-get install -y brave-browser \
+        && cd - >/dev/null \
+        && rm -rf \"$tmpdir\"".to_string()
+    } else {
+        "tmpdir=$(mktemp -d) \
+        && cd \"$tmpdir\" \
+        && wget -q https://github.com/brave/brave-browser/releases/latest/download/brave-browser-linux-x64.zip -O brave.zip \
+        && unzip -oq brave.zip \
+        && $SUDO cp -r brave-browser /opt/brave \
+        && $SUDO ln -sf /opt/brave/brave /usr/local/bin/brave \
+        && cd - >/dev/null \
+        && rm -rf \"$tmpdir\"".to_string()
+    }
+}
+
+fn brave_uninstall_cmd(pm: &str) -> String {
+    let remove = if pm == "apt" {
+        "$SUDO apt-get remove -y --purge brave-browser".to_string()
+    } else {
+        "$SUDO rm -rf /opt/brave /usr/local/bin/brave".to_string()
+    };
+    format!("{} && rm -rf \"$HOME/.config/BraveSoftware\" \"$HOME/.cache/BraveSoftware\" && echo 'Brave removed (package + config/cache).'", remove)
+}
+
+fn edge_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://go.microsoft.com/fwlink/?linkid=2212542 -O edge.deb \
+    && $SUDO apt-get install -y ./edge.deb 2>/dev/null || $SUDO dnf localinstall -y ./edge.deb 2>/dev/null || $SUDO zypper --non-interactive install ./edge.deb \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn edge_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge microsoft-edge-stable",
+        "dnf" => "$SUDO dnf remove -y microsoft-edge-stable",
+        "zypper" => "$SUDO zypper --non-interactive remove microsoft-edge-stable",
+        "pacman" => "$SUDO pacman -Rns --noconfirm microsoft-edge",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/microsoft-edge\" \"$HOME/.cache/microsoft-edge\" && echo 'Edge removed (package + config/cache).'", remove)
+}
+
+fn tor_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://www.torproject.org/dist/torbrowser/13.5.3/tor-browser-linux-x86_64-13.5.3_ALL.tar.xz -O tor-browser.tar.xz \
+    && tar -xf tor-browser.tar.xz \
+    && $SUDO cp -r tor-browser /opt/tor-browser \
+    && $SUDO ln -sf /opt/tor-browser/Browser/start-tor-browser /usr/local/bin/tor-browser \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn tor_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/tor-browser /usr/local/bin/tor-browser && rm -rf \"$HOME/.config/tor-browser\" \"$HOME/.cache/tor-browser\" \"$HOME/.tor-browser\" && echo 'Tor Browser removed (binary + config/cache).'".to_string()
+}
+
+fn bitwarden_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb -O bitwarden.deb \
+    && $SUDO apt-get install -y ./bitwarden.deb 2>/dev/null || $SUDO dnf localinstall -y ./bitwarden.deb 2>/dev/null || $SUDO zypper --non-interactive install ./bitwarden.deb \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn bitwarden_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge bitwarden",
+        "dnf" => "$SUDO dnf remove -y bitwarden",
+        "zypper" => "$SUDO zypper --non-interactive remove bitwarden",
+        "pacman" => "$SUDO pacman -Rns --noconfirm bitwarden",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/Bitwarden Desktop\" \"$HOME/.cache/Bitwarden Desktop\" && echo 'Bitwarden removed (package + config/cache).'", remove)
+}
+
+fn signal_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -qO- https://updates.signal.org/desktop/apt/keys.asc | $SUDO gpg --dearmor -o signal-desktop-keyring.gpg \
+    && $SUDO cp signal-desktop-keyring.gpg /usr/share/keyrings/ \
+    && echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-desktop-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' | $SUDO tee /etc/apt/sources.list.d/signal-xenial.list \
+    && $SUDO apt-get update \
+    && $SUDO apt-get install -y signal-desktop \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn signal_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge signal-desktop",
+        "dnf" => "$SUDO dnf remove -y signal-desktop",
+        "zypper" => "$SUDO zypper --non-interactive remove signal-desktop",
+        "pacman" => "$SUDO pacman -Rns --noconfirm signal-desktop",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/Signal\" \"$HOME/.cache/Signal\" && echo 'Signal removed (package + config/cache).'", remove)
+}
+
+fn joplin_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/laurent22/joplin/releases/latest/download/Joplin.AppImage -O Joplin.AppImage \
+    && chmod +x Joplin.AppImage \
+    && $SUDO mv Joplin.AppImage /opt/joplin.AppImage \
+    && $SUDO ln -sf /opt/joplin.AppImage /usr/local/bin/joplin \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn joplin_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/joplin.AppImage /usr/local/bin/joplin && rm -rf \"$HOME/.config/Joplin\" \"$HOME/.cache/Joplin\" && echo 'Joplin removed (binary + config/cache).'".to_string()
+}
+
+fn calibre_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q -nv https://download.calibre-ebook.com/linux-installer.sh -O calibre-installer.sh \
+    && $SUDO sh calibre-installer.sh \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn calibre_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/calibre /usr/local/bin/calibre && rm -rf \"$HOME/.config/calibre\" \"$HOME/.cache/calibre\" && echo 'Calibre removed (binary + config/cache).'".to_string()
+}
+
+fn insomnia_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/Kong/insomnia/releases/latest/download/Insomnia.AppImage -O Insomnia.AppImage \
+    && chmod +x Insomnia.AppImage \
+    && $SUDO mv Insomnia.AppImage /opt/insomnia.AppImage \
+    && $SUDO ln -sf /opt/insomnia.AppImage /usr/local/bin/insomnia \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn insomnia_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/insomnia.AppImage /usr/local/bin/insomnia && rm -rf \"$HOME/.config/Insomnia\" \"$HOME/.cache/Insomnia\" && echo 'Insomnia removed (binary + config/cache).'".to_string()
+}
+
+fn bruno_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/usebruno/bruno/releases/latest/download/bruno.AppImage -O Bruno.AppImage \
+    && chmod +x Bruno.AppImage \
+    && $SUDO mv Bruno.AppImage /opt/bruno.AppImage \
+    && $SUDO ln -sf /opt/bruno.AppImage /usr/local/bin/bruno \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn bruno_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/bruno.AppImage /usr/local/bin/bruno && rm -rf \"$HOME/.config/bruno\" \"$HOME/.cache/bruno\" && echo 'Bruno removed (binary + config/cache).'".to_string()
+}
+
+fn mongodbcompass_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://downloads.mongodb.com/compass/mongodb-compass-latest.x86_64.deb -O mongodb-compass.deb \
+    && $SUDO apt-get install -y ./mongodb-compass.deb 2>/dev/null || $SUDO dnf localinstall -y ./mongodb-compass.deb 2>/dev/null || $SUDO zypper --non-interactive install ./mongodb-compass.deb \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn mongodbcompass_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge mongodb-compass",
+        "dnf" => "$SUDO dnf remove -y mongodb-compass",
+        "zypper" => "$SUDO zypper --non-interactive remove mongodb-compass",
+        "pacman" => "$SUDO pacman -Rns --noconfirm mongodb-compass",
+        _ => "echo 'No supported package manager found'",
+    };
+    format!("{} && rm -rf \"$HOME/.config/MongoDB Compass\" \"$HOME/.cache/MongoDB Compass\" && echo 'MongoDB Compass removed (package + config/cache).'", remove)
+}
+
+fn redisinsight_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://download.redisinsight.app/redisinsight-latest-linux-x64.tar.gz -O redisinsight.tar.gz \
+    && tar -xzf redisinsight.tar.gz \
+    && $SUDO cp -r RedisInsight /opt/redisinsight \
+    && $SUDO ln -sf /opt/redisinsight/redisinsight /usr/local/bin/redisinsight \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn redisinsight_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/redisinsight /usr/local/bin/redisinsight && rm -rf \"$HOME/.config/RedisInsight\" \"$HOME/.cache/RedisInsight\" && echo 'RedisInsight removed (binary + config/cache).'".to_string()
+}
+
+fn dropbox_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q -O dropbox.tar.gz \"https://www.dropbox.com/download?plat=lnx.x86_64\" \
+    && tar -xzf dropbox.tar.gz \
+    && $SUDO cp -r .dropbox-dist /opt/dropbox \
+    && $SUDO ln -sf /opt/dropbox/dropboxd /usr/local/bin/dropbox \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn dropbox_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/dropbox /usr/local/bin/dropbox && rm -rf \"$HOME/.dropbox\" \"$HOME/.config/dropbox\" \"$HOME/.cache/dropbox\" && echo 'Dropbox removed (binary + config/cache).'".to_string()
+}
+
+fn heroic_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/heroicgameslauncher/heroicgameslauncher/releases/latest/download/heroic-latest-linux-x86_64.AppImage -O Heroic.AppImage \
+    && chmod +x Heroic.AppImage \
+    && $SUDO mv Heroic.AppImage /opt/heroic.AppImage \
+    && $SUDO ln -sf /opt/heroic.AppImage /usr/local/bin/heroic \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn heroic_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/heroic.AppImage /usr/local/bin/heroic && rm -rf \"$HOME/.config/heroic\" \"$HOME/.cache/heroic\" && echo 'Heroic removed (binary + config/cache).'".to_string()
+}
+
+fn tailscale_install_cmd(_pm: &str) -> String {
+    "curl -fsSL https://tailscale.com/install.sh | $SUDO sh".to_string()
+}
+
+fn tailscale_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge tailscale",
+        "dnf" => "$SUDO dnf remove -y tailscale",
+        "zypper" => "$SUDO zypper --non-interactive remove tailscale",
+        "pacman" => "$SUDO pacman -Rns --noconfirm tailscale",
+        _ => "$SUDO rm -rf /usr/sbin/tailscale /usr/local/bin/tailscale",
+    };
+    format!("{} && rm -rf /var/lib/tailscale /etc/tailscale && echo 'Tailscale removed (package + config/cache).'", remove)
+}
+
+fn headscale_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/headscale/headscale/releases/latest/download/headscale_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')_unknown_linux_gnu.tar.gz -O headscale.tar.gz \
+    && tar -xzf headscale.tar.gz \
+    && $SUDO install -m 0755 headscale /usr/local/bin/headscale \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn headscale_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /usr/local/bin/headscale /etc/headscale /var/lib/headscale && echo 'Headscale removed (binary + config/cache).'".to_string()
+}
+
+fn zerotier_install_cmd(_pm: &str) -> String {
+    "curl -fsSL https://install.zerotier.com/ | $SUDO bash".to_string()
+}
+
+fn zerotier_uninstall_cmd(pm: &str) -> String {
+    let remove = match pm {
+        "apt" => "$SUDO apt-get remove -y --purge zerotier-one",
+        "dnf" => "$SUDO dnf remove -y zerotier-one",
+        "zypper" => "$SUDO zypper --non-interactive remove zerotier-one",
+        "pacman" => "$SUDO pacman -Rns --noconfirm zerotier-one",
+        _ => "$SUDO rm -rf /usr/sbin/zerotier-one",
+    };
+    format!("{} && rm -rf /var/lib/zerotier-one /etc/zerotier-one && echo 'ZeroTier removed (package + config/cache).'", remove)
+}
+
+fn pihole_install_cmd(_pm: &str) -> String {
+    "curl -fsSL https://install.pi-hole.net | $SUDO bash".to_string()
+}
+
+fn pihole_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /etc/pihole /etc/lighttpd /var/www/admin /var/log/pihole && echo 'Pi-hole removed (config/cache).'".to_string()
+}
+
+fn adguardhome_install_cmd(_pm: &str) -> String {
+    "tmpdir=$(mktemp -d) \
+    && cd \"$tmpdir\" \
+    && wget -q https://github.com/AdguardTeam/AdGuardHome/releases/latest/download/AdGuardHome_linux_amd64.tar.gz -O adguardhome.tar.gz \
+    && tar -xzf adguardhome.tar.gz \
+    && $SUDO cp -r AdGuardHome /opt/adguardhome \
+    && $SUDO ln -sf /opt/adguardhome/AdGuardHome /usr/local/bin/adguardhome \
+    && cd - >/dev/null \
+    && rm -rf \"$tmpdir\"".to_string()
+}
+
+fn adguardhome_uninstall_cmd(_pm: &str) -> String {
+    "$SUDO rm -rf /opt/adguardhome /usr/local/bin/adguardhome /etc/adguardhome /var/lib/adguardhome && echo 'AdGuard Home removed (binary + config/cache).'".to_string()
+}
+
 pub fn build() -> Vec<Task> {
     let pm = detect_pm();
     let home = home_dir().unwrap_or_default();
@@ -307,63 +919,63 @@ pub fn build() -> Vec<Task> {
             "Install Node.js",
             "Installs nodejs and npm via your package manager.",
             0,
-            script(&pkg(pm, "nodejs npm")),
+            script(pkg(pm, "nodejs npm")),
         )
         .with_check(Check::Bin("node".to_string())),
         Task::new(
             "Install Git",
             "Installs git via your package manager.",
             0,
-            script(&pkg(pm, "git")),
+            script(pkg(pm, "git")),
         )
         .with_check(Check::Bin("git".to_string())),
         Task::new(
             "Install GitHub CLI",
             "Installs the gh CLI via your package manager.",
             0,
-            script(&pkg(pm, "gh")),
+            script(pkg(pm, "gh")),
         )
         .with_check(Check::Bin("gh".to_string())),
         Task::new(
             "Install htop",
             "Installs the htop process viewer.",
             0,
-            script(&pkg(pm, "htop")),
+            script(pkg(pm, "htop")),
         )
         .with_check(Check::Bin("htop".to_string())),
         Task::new(
             "Install tmux",
             "Installs the tmux terminal multiplexer.",
             0,
-            script(&pkg(pm, "tmux")),
+            script(pkg(pm, "tmux")),
         )
         .with_check(Check::Bin("tmux".to_string())),
         Task::new(
             "Install ripgrep",
             "Installs rg, a fast code search tool.",
             0,
-            script(&pkg(pm, "ripgrep")),
+            script(pkg(pm, "ripgrep")),
         )
         .with_check(Check::Bin("rg".to_string())),
         Task::new(
             "Install bat",
             "Installs bat, a cat clone with syntax highlighting.",
             0,
-            script(&pkg(pm, "bat")),
+            script(pkg(pm, "bat")),
         )
         .with_any_check(&["bat", "batcat"]),
         Task::new(
             "Install jq",
             "Installs jq, a command-line JSON processor.",
             0,
-            script(&pkg(pm, "jq")),
+            script(pkg(pm, "jq")),
         )
         .with_check(Check::Bin("jq".to_string())),
         Task::new(
             "Install Python 3",
             "Installs Python 3 and pip via your package manager.",
             0,
-            script(&pkg_alias(
+            script(pkg_alias(
                 pm,
                 "python3 python3-pip",
                 "python3 python3-pip",
@@ -376,14 +988,14 @@ pub fn build() -> Vec<Task> {
             "Install Go",
             "Installs the Go toolchain via your package manager.",
             0,
-            script(&pkg_alias(pm, "golang-go", "golang", "go", "go")),
+            script(pkg_alias(pm, "golang-go", "golang", "go", "go")),
         )
         .with_check(Check::Bin("go".to_string())),
         Task::new(
             "Install Neovim",
             "Installs the Neovim editor (the bashrc uses it as $EDITOR when present).",
             0,
-            script(&pkg(pm, "neovim")),
+            script(pkg(pm, "neovim")),
         )
         .with_check(Check::Bin("nvim".to_string())),
         Task::new(
@@ -397,7 +1009,7 @@ pub fn build() -> Vec<Task> {
             "Install Docker Compose",
             "Installs the Docker Compose plugin. Install Docker first.",
             0,
-            script(&pkg_alias(
+            script(pkg_alias(
                 pm,
                 "docker-compose-plugin",
                 "docker-compose-plugin",
@@ -410,7 +1022,7 @@ pub fn build() -> Vec<Task> {
             "Install kubectl",
             "Installs the Kubernetes CLI via your package manager.",
             0,
-            script(&pkg_alias(
+            script(pkg_alias(
                 pm,
                 "kubectl",
                 "kubernetes-client",
@@ -437,7 +1049,7 @@ pub fn build() -> Vec<Task> {
             "Install Fastfetch",
             "Installs Fastfetch for the startup banner, adding the upstream PPA when apt lacks the package.",
             0,
-            script(&if pm == "apt" {
+            script(if pm == "apt" {
                 "$SUDO apt-get install -y fastfetch || { $SUDO apt-get install -y software-properties-common && $SUDO add-apt-repository -y ppa:zhangsongcui3371/fastfetch && $SUDO apt-get update && $SUDO apt-get install -y fastfetch; }".to_string()
             } else {
                 pkg_alias(pm, "fastfetch", "fastfetch", "fastfetch", "fastfetch")
@@ -448,72 +1060,1230 @@ pub fn build() -> Vec<Task> {
             "Install eza",
             "Installs eza, a modern replacement for ls with git and tree support.",
             0,
-            script(&pkg(pm, "eza")),
+            script(pkg(pm, "eza")),
         )
         .with_check(Check::Bin("eza".to_string())),
         Task::new(
             "Install btop",
             "Installs btop, a resource monitor for CPU, memory, disks, and network.",
             0,
-            script(&pkg(pm, "btop")),
+            script(pkg(pm, "btop")),
         )
         .with_check(Check::Bin("btop".to_string())),
         Task::new(
             "Install fd",
             "Installs fd, a fast and user-friendly alternative to find.",
             0,
-            script(&pkg_alias(pm, "fd-find", "fd-find", "fd", "fd")),
+            script(pkg_alias(pm, "fd-find", "fd-find", "fd", "fd")),
         )
         .with_any_check(&["fd", "fdfind"]),
         Task::new(
             "Install tree",
             "Installs tree for directory listings.",
             0,
-            script(&pkg(pm, "tree")),
+            script(pkg(pm, "tree")),
         )
         .with_check(Check::Bin("tree".to_string())),
         Task::new(
             "Install wget",
             "Installs wget for non-interactive downloads.",
             0,
-            script(&pkg(pm, "wget")),
+            script(pkg(pm, "wget")),
         )
         .with_check(Check::Bin("wget".to_string())),
         Task::new(
             "Install shellcheck",
             "Installs ShellCheck for linting shell scripts.",
             0,
-            script(&pkg(pm, "shellcheck")),
+            script(pkg(pm, "shellcheck")),
         )
         .with_check(Check::Bin("shellcheck".to_string())),
         Task::new(
             "Install Zoxide",
             "Installs zoxide, a smarter cd command used by the shell profile.",
             0,
-            script(&pkg(pm, "zoxide")),
+            script(pkg(pm, "zoxide")),
         )
         .with_check(Check::Bin("zoxide".to_string())),
         Task::new(
             "Install fzf",
             "Installs fzf fuzzy finder and its shell integration.",
             0,
-            script(&pkg(pm, "fzf")),
+            script(pkg(pm, "fzf")),
         )
         .with_check(Check::Bin("fzf".to_string())),
         Task::new(
             "Install trash-cli",
             "Installs trash-cli so the shell profile can alias rm to a recoverable trash.",
             0,
-            script(&pkg(pm, "trash-cli")),
+            script(pkg(pm, "trash-cli")),
         )
         .with_any_check(&["trash-put"]),
         Task::new(
             "Install HTTPie",
             "Installs HTTPie (http/https) for readable HTTP requests.",
             0,
-            script(&pkg(pm, "httpie")),
+            script(pkg(pm, "httpie")),
         )
         .with_any_check(&["http", "httpie"]),
+        Task::new(
+            "Install Google Chrome",
+            "Installs Google Chrome from the official Google download (deb/rpm).",
+            0,
+            script(chrome_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("google-chrome".to_string())),
+        Task::new(
+            "Uninstall Google Chrome",
+            "Removes the google-chrome-stable package plus ~/.config/google-chrome, ~/.cache/google-chrome and /opt/google/chrome so a fresh install has no conflicts.",
+            9,
+            script(chrome_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("google-chrome".to_string())),
+        Task::new(
+            "Install VLC",
+            "Installs VLC media player via your package manager.",
+            0,
+            script(vlc_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("vlc".to_string())),
+        Task::new(
+            "Uninstall VLC",
+            "Removes the vlc package plus ~/.config/vlc and ~/.cache/vlc so a fresh install has no conflicts.",
+            9,
+            script(vlc_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("vlc".to_string())),
+        Task::new(
+            "Install VS Code",
+            "Installs Visual Studio Code from the official Microsoft download (deb/rpm).",
+            0,
+            script(vscode_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("code".to_string())),
+        Task::new(
+            "Uninstall VS Code",
+            "Removes the code package plus ~/.config/Code and ~/.cache/Code so a fresh install has no conflicts.",
+            9,
+            script(vscode_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("code".to_string())),
+        Task::new(
+            "Install Antigravity IDE",
+            "Installs the Antigravity IDE via your package manager (apt/dnf/zypper repos, or AUR on pacman).",
+            0,
+            script(antigravity_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("antigravity-ide".to_string())),
+        Task::new(
+            "Uninstall Antigravity IDE",
+            "Removes the antigravity-ide package plus ~/.config/antigravity-ide and ~/.cache/antigravity-ide so a fresh install has no conflicts.",
+            9,
+            script(antigravity_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("antigravity-ide".to_string())),
+        Task::new(
+            "Install OpenCode",
+            "Installs the OpenCode CLI with the official installer (leaves npm/package-manager copies untouched).",
+            0,
+            script(opencode_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("opencode".to_string())),
+        Task::new(
+            "Install Discord",
+            "Installs Discord from the official download (deb for apt, tarball for dnf/zypper).",
+            0,
+            script(discord_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("discord".to_string())),
+        Task::new(
+            "Install Spotify",
+            "Installs Spotify via your package manager.",
+            0,
+            script(spotify_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("spotify".to_string())),
+        Task::new(
+            "Install Obsidian",
+            "Installs Obsidian from the official deb download.",
+            0,
+            script(obsidian_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("obsidian".to_string())),
+        Task::new(
+            "Install Telegram",
+            "Installs Telegram Desktop via your package manager.",
+            0,
+            script(telegram_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("telegram".to_string())),
+        Task::new(
+            "Install Postman",
+            "Installs Postman to /opt/postman with a /usr/local/bin/postman launcher.",
+            0,
+            script(postman_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("postman".to_string())),
+        Task::new(
+            "Install DBeaver",
+            "Installs DBeaver CE from the official download (deb/rpm).",
+            0,
+            script(dbeaver_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("dbeaver".to_string())),
+        Task::new(
+            "Install GIMP",
+            "Installs GIMP image editor via your package manager.",
+            0,
+            script(repo_install(pm, "gimp")),
+        )
+        .with_check(Check::Bin("gimp".to_string())),
+        Task::new(
+            "Install OBS Studio",
+            "Installs OBS Studio for streaming and recording via your package manager.",
+            0,
+            script(repo_install(pm, "obs-studio")),
+        )
+        .with_check(Check::Bin("obs".to_string())),
+        Task::new(
+            "Install Blender",
+            "Installs Blender 3D creation suite via your package manager.",
+            0,
+            script(repo_install(pm, "blender")),
+        )
+        .with_check(Check::Bin("blender".to_string())),
+        Task::new(
+            "Install Inkscape",
+            "Installs Inkscape vector graphics editor via your package manager.",
+            0,
+            script(repo_install(pm, "inkscape")),
+        )
+        .with_check(Check::Bin("inkscape".to_string())),
+        Task::new(
+            "Install HandBrake",
+            "Installs HandBrake video transcoder via your package manager.",
+            0,
+            script(repo_install(pm, "handbrake")),
+        )
+        .with_check(Check::Bin("HandBrakeCLI".to_string())),
+        Task::new(
+            "Install Zoom",
+            "Installs Zoom from the official download (deb/rpm).",
+            0,
+            script({
+                let zoom_url = if pm == "apt" {
+                    "https://zoom.us/client/latest/zoom_amd64.deb"
+                } else {
+                    "https://zoom.us/client/latest/zoom_x86_64.rpm"
+                };
+                format!(
+                    "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q {} -O zoom.pkg \
+            && $SUDO apt-get install -y ./zoom.pkg 2>/dev/null || $SUDO dnf localinstall -y ./zoom.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./zoom.pkg \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"",
+                    zoom_url
+                )
+            }),
+        )
+        .with_check(Check::Bin("zoom".to_string())),
+        Task::new(
+            "Install Steam",
+            "Installs Steam gaming platform via your package manager.",
+            0,
+            script(repo_install(pm, "steam")),
+        )
+        .with_check(Check::Bin("steam".to_string())),
+        Task::new(
+            "Install Slack",
+            "Installs Slack from the official download (deb/rpm).",
+            0,
+            script({
+                let slack_url = if pm == "apt" {
+                    "https://downloads.slack-edge.com/releases/linux/6.4.0/prod/x64/slack-desktop-6.4.0-amd64.deb"
+                } else {
+                    "https://downloads.slack-edge.com/releases/linux/6.4.0/prod/x64/slack-desktop-6.4.0-2.x86_64.rpm"
+                };
+                format!(
+                    "tmpdir=$(mktemp -d) \
+            && cd \"$tmpdir\" \
+            && wget -q {} -O slack.pkg \
+            && $SUDO apt-get install -y ./slack.pkg 2>/dev/null || $SUDO dnf localinstall -y ./slack.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./slack.pkg \
+            && cd - >/dev/null \
+            && rm -rf \"$tmpdir\"",
+                    slack_url
+                )
+            }),
+        )
+        .with_check(Check::Bin("slack".to_string())),
+        Task::new(
+            "Install FileZilla",
+            "Installs FileZilla FTP client via your package manager.",
+            0,
+            script(repo_install(pm, "filezilla")),
+        )
+        .with_check(Check::Bin("filezilla".to_string())),
+        Task::new(
+            "Install Audacity",
+            "Installs Audacity audio editor via your package manager.",
+            0,
+            script(repo_install(pm, "audacity")),
+        )
+        .with_check(Check::Bin("audacity".to_string())),
+        Task::new(
+            "Install Firefox",
+            "Installs Firefox from the official Mozilla tarball into /opt/firefox.",
+            0,
+            script(firefox_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("firefox".to_string())),
+        Task::new(
+            "Install Brave Browser",
+            "Installs Brave Browser from the official apt repo (apt) or GitHub release (other).",
+            0,
+            script(brave_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("brave".to_string())),
+        Task::new(
+            "Install Microsoft Edge",
+            "Installs Microsoft Edge from the official Microsoft download (deb/rpm).",
+            0,
+            script(edge_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("microsoft-edge".to_string())),
+        Task::new(
+            "Install Chromium",
+            "Installs Chromium web browser via your package manager.",
+            0,
+            script(repo_install(pm, "chromium")),
+        )
+        .with_check(Check::Bin("chromium".to_string())),
+        Task::new(
+            "Install Tor Browser",
+            "Installs Tor Browser from the official Tor Project tarball into /opt/tor-browser.",
+            0,
+            script(tor_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("tor-browser".to_string())),
+        Task::new(
+            "Install Bitwarden",
+            "Installs Bitwarden password manager from the official download (deb/rpm).",
+            0,
+            script(bitwarden_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("bitwarden".to_string())),
+        Task::new(
+            "Install KeePassXC",
+            "Installs KeePassXC, a cross-platform offline password manager.",
+            0,
+            script(repo_install(pm, "keepassxc")),
+        )
+        .with_check(Check::Bin("keepassxc".to_string())),
+        Task::new(
+            "Install Thunderbird",
+            "Installs Thunderbird email client via your package manager.",
+            0,
+            script(repo_install(pm, "thunderbird")),
+        )
+        .with_check(Check::Bin("thunderbird".to_string())),
+        Task::new(
+            "Install Signal Desktop",
+            "Installs Signal Desktop from the official apt repository (apt only).",
+            0,
+            script(signal_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("signal-desktop".to_string())),
+        Task::new(
+            "Install WhatsApp Desktop",
+            "Installs WhatsApp Desktop via your package manager.",
+            0,
+            script(repo_install(pm, "whatsapp-for-linux")),
+        )
+        .with_check(Check::Bin("whatsapp".to_string())),
+        Task::new(
+            "Install Joplin",
+            "Installs Joplin note-taking app as an AppImage into /opt/joplin.AppImage.",
+            0,
+            script(joplin_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("joplin".to_string())),
+        Task::new(
+            "Install Calibre",
+            "Installs Calibre e-book manager using the official Linux installer.",
+            0,
+            script(calibre_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("calibre".to_string())),
+        Task::new(
+            "Install LibreOffice",
+            "Installs LibreOffice office suite via your package manager.",
+            0,
+            script(repo_install(pm, "libreoffice")),
+        )
+        .with_any_check(&["libreoffice", "soffice"]),
+        Task::new(
+            "Install Okular",
+            "Installs Okular document viewer via your package manager.",
+            0,
+            script(repo_install(pm, "okular")),
+        )
+        .with_check(Check::Bin("okular".to_string())),
+        Task::new(
+            "Install Krita",
+            "Installs Krita digital painting application via your package manager.",
+            0,
+            script(repo_install(pm, "krita")),
+        )
+        .with_check(Check::Bin("krita".to_string())),
+        Task::new(
+            "Install Darktable",
+            "Installs Darktable photography workflow application via your package manager.",
+            0,
+            script(repo_install(pm, "darktable")),
+        )
+        .with_check(Check::Bin("darktable".to_string())),
+        Task::new(
+            "Install Kdenlive",
+            "Installs Kdenlive video editor via your package manager.",
+            0,
+            script(repo_install(pm, "kdenlive")),
+        )
+        .with_check(Check::Bin("kdenlive".to_string())),
+        Task::new(
+            "Install Shotcut",
+            "Installs Shotcut video editor via your package manager.",
+            0,
+            script(repo_install(pm, "shotcut")),
+        )
+        .with_check(Check::Bin("shotcut".to_string())),
+        Task::new(
+            "Install Insomnia",
+            "Installs Insomnia API client as an AppImage into /opt/insomnia.AppImage.",
+            0,
+            script(insomnia_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("insomnia".to_string())),
+        Task::new(
+            "Install Bruno",
+            "Installs Bruno API client as an AppImage into /opt/bruno.AppImage.",
+            0,
+            script(bruno_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("bruno".to_string())),
+        Task::new(
+            "Install pgAdmin",
+            "Installs pgAdmin 4, PostgreSQL administration tool, via your package manager.",
+            0,
+            script(repo_install(pm, "pgadmin4")),
+        )
+        .with_check(Check::Bin("pgadmin4".to_string())),
+        Task::new(
+            "Install MySQL Workbench",
+            "Installs MySQL Workbench database GUI via your package manager.",
+            0,
+            script(repo_install(pm, "mysql-workbench")),
+        )
+        .with_check(Check::Bin("mysql-workbench".to_string())),
+        Task::new(
+            "Install MongoDB Compass",
+            "Installs MongoDB Compass GUI from the official download (deb/rpm).",
+            0,
+            script(mongodbcompass_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("mongodb-compass".to_string())),
+        Task::new(
+            "Install RedisInsight",
+            "Installs RedisInsight GUI from the official download into /opt/redisinsight.",
+            0,
+            script(redisinsight_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("redisinsight".to_string())),
+        Task::new(
+            "Install Rclone",
+            "Installs Rclone for syncing files to cloud storage providers.",
+            0,
+            script(repo_install(pm, "rclone")),
+        )
+        .with_check(Check::Bin("rclone".to_string())),
+        Task::new(
+            "Install Restic",
+            "Installs Restic, a fast and efficient backup program.",
+            0,
+            script(repo_install(pm, "restic")),
+        )
+        .with_check(Check::Bin("restic".to_string())),
+        Task::new(
+            "Install Timeshift",
+            "Installs Timeshift for system restore points and snapshots.",
+            0,
+            script(repo_install(pm, "timeshift")),
+        )
+        .with_check(Check::Bin("timeshift".to_string())),
+        Task::new(
+            "Install BorgBackup",
+            "Installs BorgBackup, a deduplicating backup program.",
+            0,
+            script(repo_install(pm, "borgbackup")),
+        )
+        .with_check(Check::Bin("borg".to_string())),
+        Task::new(
+            "Install Syncthing",
+            "Installs Syncthing for continuous file synchronization.",
+            0,
+            script(repo_install(pm, "syncthing")),
+        )
+        .with_check(Check::Bin("syncthing".to_string())),
+        Task::new(
+            "Install Dropbox",
+            "Installs Dropbox client from the official download into /opt/dropbox.",
+            0,
+            script(dropbox_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("dropbox".to_string())),
+        Task::new(
+            "Install Nextcloud Client",
+            "Installs Nextcloud desktop client via your package manager.",
+            0,
+            script(repo_install(pm, "nextcloud-client")),
+        )
+        .with_check(Check::Bin("nextcloud".to_string())),
+        Task::new(
+            "Install Lutris",
+            "Installs Lutris gaming platform via your package manager.",
+            0,
+            script(repo_install(pm, "lutris")),
+        )
+        .with_check(Check::Bin("lutris".to_string())),
+        Task::new(
+            "Install Heroic Games Launcher",
+            "Installs Heroic Games Launcher as an AppImage into /opt/heroic.AppImage.",
+            0,
+            script(heroic_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("heroic".to_string())),
+        Task::new(
+            "Install VirtualBox",
+            "Installs VirtualBox virtualization software via your package manager.",
+            0,
+            script(repo_install(pm, "virtualbox")),
+        )
+        .with_check(Check::Bin("virtualbox".to_string())),
+        Task::new(
+            "Install Vagrant",
+            "Installs Vagrant for development environment management.",
+            0,
+            script(repo_install(pm, "vagrant")),
+        )
+        .with_check(Check::Bin("vagrant".to_string())),
+        Task::new(
+            "Install QEMU",
+            "Installs QEMU emulator and virtualizer via your package manager.",
+            0,
+            script(repo_install(pm, "qemu")),
+        )
+        .with_check(Check::Bin("qemu-system-x86_64".to_string())),
+        Task::new(
+            "Install LXD",
+            "Installs LXD system container manager via your package manager.",
+            0,
+            script(repo_install(pm, "lxd")),
+        )
+        .with_check(Check::Bin("lxc".to_string())),
+        Task::new(
+            "Install Buildah",
+            "Installs Buildah for building OCI container images.",
+            0,
+            script(repo_install(pm, "buildah")),
+        )
+        .with_check(Check::Bin("buildah".to_string())),
+        Task::new(
+            "Install Skopeo",
+            "Installs Skopeo for inspecting and copying container images.",
+            0,
+            script(repo_install(pm, "skopeo")),
+        )
+        .with_check(Check::Bin("skopeo".to_string())),
+        Task::new(
+            "Install WireGuard",
+            "Installs WireGuard VPN tunnel via your package manager.",
+            0,
+            script(repo_install(pm, "wireguard-tools")),
+        )
+        .with_check(Check::Bin("wg".to_string())),
+        Task::new(
+            "Install OpenVPN",
+            "Installs OpenVPN client via your package manager.",
+            0,
+            script(repo_install(pm, "openvpn")),
+        )
+        .with_check(Check::Bin("openvpn".to_string())),
+        Task::new(
+            "Install Tailscale",
+            "Installs Tailscale mesh VPN using the official install script.",
+            0,
+            script(tailscale_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("tailscale".to_string())),
+        Task::new(
+            "Install Headscale",
+            "Installs Headscale, a self-hosted Tailscale control server.",
+            0,
+            script(headscale_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("headscale".to_string())),
+        Task::new(
+            "Install ZeroTier",
+            "Installs ZeroTier mesh VPN using the official install script.",
+            0,
+            script(zerotier_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("zerotier-one".to_string())),
+        Task::new(
+            "Install Pi-hole",
+            "Installs Pi-hole network-wide ad blocker using the official installer.",
+            0,
+            script(pihole_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("pihole".to_string())),
+        Task::new(
+            "Install AdGuard Home",
+            "Installs AdGuard Home network-wide ad blocker into /opt/adguardhome.",
+            0,
+            script(adguardhome_install_cmd(pm)),
+        )
+        .with_check(Check::Bin("adguardhome".to_string())),
+        Task::new(
+            "Install Cockpit",
+            "Installs Cockpit web-based server management console.",
+            0,
+            script(repo_install(pm, "cockpit")),
+        )
+        .with_check(Check::Bin("cockpit".to_string())),
+        Task::new(
+            "Install Grafana",
+            "Installs Grafana monitoring and observability platform.",
+            0,
+            script(repo_install(pm, "grafana")),
+        )
+        .with_check(Check::Bin("grafana".to_string())),
+        Task::new(
+            "Install PostgreSQL",
+            "Installs PostgreSQL relational database server.",
+            0,
+            script(repo_install(pm, "postgresql")),
+        )
+        .with_check(Check::Bin("postgres".to_string())),
+        Task::new(
+            "Install MySQL/MariaDB",
+            "Installs MySQL or MariaDB database server via your package manager.",
+            0,
+            script(repo_install(pm, "mariadb")),
+        )
+        .with_check(Check::Bin("mysql".to_string())),
+        Task::new(
+            "Install MongoDB",
+            "Installs MongoDB document database via your package manager.",
+            0,
+            script(repo_install(pm, "mongodb")),
+        )
+        .with_check(Check::Bin("mongod".to_string())),
+        Task::new(
+            "Install Redis",
+            "Installs Redis in-memory data structure store.",
+            0,
+            script(repo_install(pm, "redis")),
+        )
+        .with_check(Check::Bin("redis-server".to_string())),
+        Task::new(
+            "Install Memcached",
+            "Installs Memcached distributed memory object caching system.",
+            0,
+            script(repo_install(pm, "memcached")),
+        )
+        .with_check(Check::Bin("memcached".to_string())),
+        Task::new(
+            "Uninstall OpenCode",
+            "Removes the opencode binary plus ~/.opencode and ~/.config/opencode so a fresh install has no conflicts.",
+            9,
+            script(opencode_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("opencode".to_string())),
+        Task::new(
+            "Uninstall Discord",
+            "Removes Discord plus ~/.config/discord and ~/.cache/discord so a fresh install has no conflicts.",
+            9,
+            script(discord_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("discord".to_string())),
+        Task::new(
+            "Uninstall Spotify",
+            "Removes Spotify plus ~/.config/spotify and ~/.cache/spotify so a fresh install has no conflicts.",
+            9,
+            script(spotify_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("spotify".to_string())),
+        Task::new(
+            "Uninstall Obsidian",
+            "Removes Obsidian plus ~/.config/obsidian and ~/.cache/obsidian so a fresh install has no conflicts.",
+            9,
+            script(obsidian_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("obsidian".to_string())),
+        Task::new(
+            "Uninstall Telegram",
+            "Removes Telegram plus ~/.config/TelegramDesktop and ~/.cache/TelegramDesktop so a fresh install has no conflicts.",
+            9,
+            script(telegram_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("telegram".to_string())),
+        Task::new(
+            "Uninstall Postman",
+            "Removes /opt/postman, the /usr/local/bin/postman launcher, and ~/.config/Postman so a fresh install has no conflicts.",
+            9,
+            script(postman_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("postman".to_string())),
+        Task::new(
+            "Uninstall DBeaver",
+            "Removes DBeaver plus ~/.dbeaver, ~/.config/DBeaverData and ~/.cache/DBeaver so a fresh install has no conflicts.",
+            9,
+            script(dbeaver_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("dbeaver".to_string())),
+        Task::new(
+            "Uninstall GIMP",
+            "Removes GIMP plus ~/.config/GIMP and ~/.cache/GIMP so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "gimp", &[".config/GIMP", ".cache/GIMP"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("gimp".to_string())),
+        Task::new(
+            "Uninstall OBS Studio",
+            "Removes OBS Studio plus ~/.config/obs-studio and ~/.cache/obs-studio so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "obs-studio", &[".config/obs-studio", ".cache/obs-studio"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("obs".to_string())),
+        Task::new(
+            "Uninstall Blender",
+            "Removes Blender plus ~/.config/blender and ~/.cache/blender so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "blender", &[".config/blender", ".cache/blender"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("blender".to_string())),
+        Task::new(
+            "Uninstall Inkscape",
+            "Removes Inkscape plus ~/.config/inkscape and ~/.cache/inkscape so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "inkscape", &[".config/inkscape", ".cache/inkscape"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("inkscape".to_string())),
+        Task::new(
+            "Uninstall HandBrake",
+            "Removes HandBrake plus ~/.config/HandBrake and ~/.cache/HandBrake so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "handbrake", &[".config/HandBrake", ".cache/HandBrake"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("HandBrakeCLI".to_string())),
+        Task::new(
+            "Uninstall Zoom",
+            "Removes Zoom plus ~/.config/zoom and ~/.cache/zoom so a fresh install has no conflicts.",
+            9,
+            script({
+                let remove = match pm {
+                    "apt" => "$SUDO apt-get remove -y --purge zoom",
+                    "dnf" => "$SUDO dnf remove -y zoom",
+                    "zypper" => "$SUDO zypper --non-interactive remove zoom",
+                    "pacman" => "$SUDO pacman -Rns --noconfirm zoom",
+                    _ => "echo 'No supported package manager found'",
+                };
+                format!("{} && rm -rf \"$HOME/.config/zoom\" \"$HOME/.cache/zoom\" && echo 'Zoom removed (package + config/cache).'", remove)
+            }),
+        )
+        .destructive()
+        .with_check(Check::Bin("zoom".to_string())),
+        Task::new(
+            "Uninstall Steam",
+            "Removes Steam plus ~/.config/steam and ~/.cache/steam so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "steam", &[".config/steam", ".cache/steam"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("steam".to_string())),
+        Task::new(
+            "Uninstall Slack",
+            "Removes Slack plus ~/.config/Slack and ~/.cache/Slack so a fresh install has no conflicts.",
+            9,
+            script({
+                let remove = match pm {
+                    "apt" => "$SUDO apt-get remove -y --purge slack-desktop",
+                    "dnf" => "$SUDO dnf remove -y slack",
+                    "zypper" => "$SUDO zypper --non-interactive remove slack",
+                    "pacman" => "$SUDO pacman -Rns --noconfirm slack",
+                    _ => "echo 'No supported package manager found'",
+                };
+                format!("{} && rm -rf \"$HOME/.config/Slack\" \"$HOME/.cache/Slack\" && echo 'Slack removed (package + config/cache).'", remove)
+            }),
+        )
+        .destructive()
+        .with_check(Check::Bin("slack".to_string())),
+        Task::new(
+            "Uninstall FileZilla",
+            "Removes FileZilla plus ~/.config/filezilla and ~/.cache/filezilla so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "filezilla", &[".config/filezilla", ".cache/filezilla"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("filezilla".to_string())),
+        Task::new(
+            "Uninstall Audacity",
+            "Removes Audacity plus ~/.config/audacity and ~/.cache/audacity so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "audacity", &[".config/audacity", ".cache/audacity"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("audacity".to_string())),
+        Task::new(
+            "Uninstall Firefox",
+            "Removes /opt/firefox, the /usr/local/bin/firefox launcher, and ~/.mozilla/firefox so a fresh install has no conflicts.",
+            9,
+            script(firefox_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("firefox".to_string())),
+        Task::new(
+            "Uninstall Brave Browser",
+            "Removes Brave Browser plus ~/.config/BraveSoftware and ~/.cache/BraveSoftware so a fresh install has no conflicts.",
+            9,
+            script(brave_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("brave".to_string())),
+        Task::new(
+            "Uninstall Microsoft Edge",
+            "Removes Edge plus ~/.config/microsoft-edge and ~/.cache/microsoft-edge so a fresh install has no conflicts.",
+            9,
+            script(edge_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("microsoft-edge".to_string())),
+        Task::new(
+            "Uninstall Chromium",
+            "Removes Chromium plus ~/.config/chromium and ~/.cache/chromium so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "chromium", &[".config/chromium", ".cache/chromium"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("chromium".to_string())),
+        Task::new(
+            "Uninstall Tor Browser",
+            "Removes /opt/tor-browser, the /usr/local/bin/tor-browser launcher, and ~/.config/tor-browser so a fresh install has no conflicts.",
+            9,
+            script(tor_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("tor-browser".to_string())),
+        Task::new(
+            "Uninstall Bitwarden",
+            "Removes Bitwarden plus ~/.config/Bitwarden Desktop and ~/.cache/Bitwarden Desktop so a fresh install has no conflicts.",
+            9,
+            script(bitwarden_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("bitwarden".to_string())),
+        Task::new(
+            "Uninstall KeePassXC",
+            "Removes KeePassXC plus ~/.config/keepassxc and ~/.cache/keepassxc so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "keepassxc", &[".config/keepassxc", ".cache/keepassxc"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("keepassxc".to_string())),
+        Task::new(
+            "Uninstall Thunderbird",
+            "Removes Thunderbird plus ~/.config/thunderbird and ~/.cache/thunderbird so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "thunderbird", &[".config/thunderbird", ".cache/thunderbird"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("thunderbird".to_string())),
+        Task::new(
+            "Uninstall Signal Desktop",
+            "Removes Signal Desktop plus ~/.config/Signal and ~/.cache/Signal so a fresh install has no conflicts.",
+            9,
+            script(signal_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("signal-desktop".to_string())),
+        Task::new(
+            "Uninstall WhatsApp Desktop",
+            "Removes WhatsApp Desktop plus ~/.config/whatsapp-for-linux and ~/.cache/whatsapp-for-linux so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "whatsapp-for-linux", &[".config/whatsapp-for-linux", ".cache/whatsapp-for-linux"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("whatsapp".to_string())),
+        Task::new(
+            "Uninstall Joplin",
+            "Removes /opt/joplin.AppImage, the /usr/local/bin/joplin launcher, and ~/.config/Joplin so a fresh install has no conflicts.",
+            9,
+            script(joplin_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("joplin".to_string())),
+        Task::new(
+            "Uninstall Calibre",
+            "Removes /opt/calibre, the /usr/local/bin/calibre launcher, and ~/.config/calibre so a fresh install has no conflicts.",
+            9,
+            script(calibre_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("calibre".to_string())),
+        Task::new(
+            "Uninstall LibreOffice",
+            "Removes LibreOffice plus ~/.config/libreoffice and ~/.cache/libreoffice so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "libreoffice", &[".config/libreoffice", ".cache/libreoffice"])),
+        )
+        .destructive()
+        .with_any_check(&["libreoffice", "soffice"]),
+        Task::new(
+            "Uninstall Okular",
+            "Removes Okular plus ~/.config/okular and ~/.cache/okular so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "okular", &[".config/okular", ".cache/okular"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("okular".to_string())),
+        Task::new(
+            "Uninstall Krita",
+            "Removes Krita plus ~/.config/krita and ~/.cache/krita so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "krita", &[".config/krita", ".cache/krita"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("krita".to_string())),
+        Task::new(
+            "Uninstall Darktable",
+            "Removes Darktable plus ~/.config/darktable and ~/.cache/darktable so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "darktable", &[".config/darktable", ".cache/darktable"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("darktable".to_string())),
+        Task::new(
+            "Uninstall Kdenlive",
+            "Removes Kdenlive plus ~/.config/kdenlive and ~/.cache/kdenlive so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "kdenlive", &[".config/kdenlive", ".cache/kdenlive"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("kdenlive".to_string())),
+        Task::new(
+            "Uninstall Shotcut",
+            "Removes Shotcut plus ~/.config/shotcut and ~/.cache/shotcut so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "shotcut", &[".config/shotcut", ".cache/shotcut"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("shotcut".to_string())),
+        Task::new(
+            "Uninstall Insomnia",
+            "Removes /opt/insomnia.AppImage, the /usr/local/bin/insomnia launcher, and ~/.config/Insomnia so a fresh install has no conflicts.",
+            9,
+            script(insomnia_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("insomnia".to_string())),
+        Task::new(
+            "Uninstall Bruno",
+            "Removes /opt/bruno.AppImage, the /usr/local/bin/bruno launcher, and ~/.config/bruno so a fresh install has no conflicts.",
+            9,
+            script(bruno_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("bruno".to_string())),
+        Task::new(
+            "Uninstall pgAdmin",
+            "Removes pgAdmin plus ~/.config/pgadmin and ~/.cache/pgadmin so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "pgadmin4", &[".config/pgadmin", ".cache/pgadmin"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("pgadmin4".to_string())),
+        Task::new(
+            "Uninstall MySQL Workbench",
+            "Removes MySQL Workbench plus ~/.config/mysql-workbench and ~/.cache/mysql-workbench so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "mysql-workbench", &[".config/mysql-workbench", ".cache/mysql-workbench"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("mysql-workbench".to_string())),
+        Task::new(
+            "Uninstall MongoDB Compass",
+            "Removes MongoDB Compass plus ~/.config/MongoDB Compass and ~/.cache/MongoDB Compass so a fresh install has no conflicts.",
+            9,
+            script(mongodbcompass_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("mongodb-compass".to_string())),
+        Task::new(
+            "Uninstall RedisInsight",
+            "Removes /opt/redisinsight, the /usr/local/bin/redisinsight launcher, and ~/.config/RedisInsight so a fresh install has no conflicts.",
+            9,
+            script(redisinsight_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("redisinsight".to_string())),
+        Task::new(
+            "Uninstall Rclone",
+            "Removes Rclone plus ~/.config/rclone and ~/.cache/rclone so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "rclone", &[".config/rclone", ".cache/rclone"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("rclone".to_string())),
+        Task::new(
+            "Uninstall Restic",
+            "Removes Restic plus ~/.config/restic and ~/.cache/restic so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "restic", &[".config/restic", ".cache/restic"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("restic".to_string())),
+        Task::new(
+            "Uninstall Timeshift",
+            "Removes Timeshift plus ~/.config/timeshift and ~/.cache/timeshift so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "timeshift", &[".config/timeshift", ".cache/timeshift"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("timeshift".to_string())),
+        Task::new(
+            "Uninstall BorgBackup",
+            "Removes BorgBackup plus ~/.config/borg and ~/.cache/borg so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "borgbackup", &[".config/borg", ".cache/borg"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("borg".to_string())),
+        Task::new(
+            "Uninstall Syncthing",
+            "Removes Syncthing plus ~/.config/syncthing and ~/.cache/syncthing so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "syncthing", &[".config/syncthing", ".cache/syncthing"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("syncthing".to_string())),
+        Task::new(
+            "Uninstall Dropbox",
+            "Removes /opt/dropbox, the /usr/local/bin/dropbox launcher, and ~/.dropbox, ~/.config/dropbox, ~/.cache/dropbox so a fresh install has no conflicts.",
+            9,
+            script(dropbox_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("dropbox".to_string())),
+        Task::new(
+            "Uninstall Nextcloud Client",
+            "Removes Nextcloud plus ~/.config/nextcloud and ~/.cache/nextcloud so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "nextcloud-client", &[".config/nextcloud", ".cache/nextcloud"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("nextcloud".to_string())),
+        Task::new(
+            "Uninstall Lutris",
+            "Removes Lutris plus ~/.config/lutris and ~/.cache/lutris so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "lutris", &[".config/lutris", ".cache/lutris"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("lutris".to_string())),
+        Task::new(
+            "Uninstall Heroic Games Launcher",
+            "Removes /opt/heroic.AppImage, the /usr/local/bin/heroic launcher, and ~/.config/heroic so a fresh install has no conflicts.",
+            9,
+            script(heroic_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("heroic".to_string())),
+        Task::new(
+            "Uninstall VirtualBox",
+            "Removes VirtualBox plus ~/.config/VirtualBox and ~/.cache/VirtualBox so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "virtualbox", &[".config/VirtualBox", ".cache/VirtualBox"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("virtualbox".to_string())),
+        Task::new(
+            "Uninstall Vagrant",
+            "Removes Vagrant plus ~/.config/vagrant and ~/.cache/vagrant so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "vagrant", &[".config/vagrant", ".cache/vagrant"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("vagrant".to_string())),
+        Task::new(
+            "Uninstall QEMU",
+            "Removes QEMU plus ~/.config/qemu and ~/.cache/qemu so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "qemu", &[".config/qemu", ".cache/qemu"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("qemu-system-x86_64".to_string())),
+        Task::new(
+            "Uninstall LXD",
+            "Removes LXD plus ~/.config/lxd and ~/.cache/lxd so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "lxd", &[".config/lxd", ".cache/lxd"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("lxc".to_string())),
+        Task::new(
+            "Uninstall Buildah",
+            "Removes Buildah plus ~/.config/buildah and ~/.cache/buildah so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "buildah", &[".config/buildah", ".cache/buildah"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("buildah".to_string())),
+        Task::new(
+            "Uninstall Skopeo",
+            "Removes Skopeo plus ~/.config/skopeo and ~/.cache/skopeo so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "skopeo", &[".config/skopeo", ".cache/skopeo"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("skopeo".to_string())),
+        Task::new(
+            "Uninstall WireGuard",
+            "Removes WireGuard tools plus ~/.config/wireguard and ~/.cache/wireguard so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "wireguard-tools", &[".config/wireguard", ".cache/wireguard"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("wg".to_string())),
+        Task::new(
+            "Uninstall OpenVPN",
+            "Removes OpenVPN plus ~/.config/openvpn and ~/.cache/openvpn so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "openvpn", &[".config/openvpn", ".cache/openvpn"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("openvpn".to_string())),
+        Task::new(
+            "Uninstall Tailscale",
+            "Removes Tailscale plus /var/lib/tailscale and /etc/tailscale so a fresh install has no conflicts.",
+            9,
+            script(tailscale_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("tailscale".to_string())),
+        Task::new(
+            "Uninstall Headscale",
+            "Removes /usr/local/bin/headscale, /etc/headscale, and /var/lib/headscale so a fresh install has no conflicts.",
+            9,
+            script(headscale_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("headscale".to_string())),
+        Task::new(
+            "Uninstall ZeroTier",
+            "Removes ZeroTier plus /var/lib/zerotier-one and /etc/zerotier-one so a fresh install has no conflicts.",
+            9,
+            script(zerotier_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("zerotier-one".to_string())),
+        Task::new(
+            "Uninstall Pi-hole",
+            "Removes /etc/pihole, /etc/lighttpd, /var/www/admin, and /var/log/pihole so a fresh install has no conflicts.",
+            9,
+            script(pihole_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("pihole".to_string())),
+        Task::new(
+            "Uninstall AdGuard Home",
+            "Removes /opt/adguardhome, /etc/adguardhome, and /var/lib/adguardhome so a fresh install has no conflicts.",
+            9,
+            script(adguardhome_uninstall_cmd(pm)),
+        )
+        .destructive()
+        .with_check(Check::Bin("adguardhome".to_string())),
+        Task::new(
+            "Uninstall Cockpit",
+            "Removes Cockpit plus ~/.config/cockpit and ~/.cache/cockpit so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "cockpit", &[".config/cockpit", ".cache/cockpit"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("cockpit".to_string())),
+        Task::new(
+            "Uninstall Grafana",
+            "Removes Grafana plus ~/.config/grafana and ~/.cache/grafana so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "grafana", &[".config/grafana", ".cache/grafana"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("grafana".to_string())),
+        Task::new(
+            "Uninstall PostgreSQL",
+            "Removes PostgreSQL plus ~/.config/postgresql and ~/.cache/postgresql so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "postgresql", &[".config/postgresql", ".cache/postgresql"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("postgres".to_string())),
+        Task::new(
+            "Uninstall MySQL/MariaDB",
+            "Removes MariaDB plus ~/.config/mariadb and ~/.cache/mariadb so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "mariadb", &[".config/mariadb", ".cache/mariadb"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("mysql".to_string())),
+        Task::new(
+            "Uninstall MongoDB",
+            "Removes MongoDB plus ~/.config/mongodb and ~/.cache/mongodb so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "mongodb", &[".config/mongodb", ".cache/mongodb"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("mongod".to_string())),
+        Task::new(
+            "Uninstall Redis",
+            "Removes Redis plus ~/.config/redis and ~/.cache/redis so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "redis", &[".config/redis", ".cache/redis"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("redis-server".to_string())),
+        Task::new(
+            "Uninstall Memcached",
+            "Removes Memcached plus ~/.config/memcached and ~/.cache/memcached so a fresh install has no conflicts.",
+            9,
+            script(repo_uninstall(pm, "memcached", &[".config/memcached", ".cache/memcached"])),
+        )
+        .destructive()
+        .with_check(Check::Bin("memcached".to_string())),
         Task::new(
             "Refresh dotfiles",
             "Re-links ~/.bashrc, starship.toml and the fastfetch config from ~/.local/share/bashbox.",
@@ -571,17 +2341,127 @@ pub fn build() -> Vec<Task> {
         )
         .destructive(),
         Task::new(
+            "Reload .bashrc",
+            "Sources ~/.bashrc in the current shell to apply changes without restarting.",
+            1,
+            script("if [ -f \"$HOME/.bashrc\" ]; then source \"$HOME/.bashrc\" && echo '.bashrc reloaded.'; else echo 'No ~/.bashrc found.'; fi"),
+        ),
+        Task::new(
+            "Show shell aliases",
+            "Lists all defined bash aliases.",
+            1,
+            script("if command -v alias >/dev/null 2>&1; then alias; else echo 'alias is not available.'; fi"),
+        ),
+        Task::new(
+            "Show shell functions",
+            "Lists all defined bash functions.",
+            1,
+            script("if command -v declare >/dev/null 2>&1; then declare -f; else echo 'declare is not available.'; fi"),
+        ),
+        Task::new(
+            "Show PATH",
+            "Prints the current PATH with each entry on a separate line.",
+            1,
+            script("echo \"$PATH\" | tr ':' '\\n'"),
+        ),
+        Task::new(
+            "Show shell options",
+            "Lists active bash shell options (shopt).",
+            1,
+            script("if command -v shopt >/dev/null 2>&1; then shopt; else echo 'shopt is not available.'; fi"),
+        ),
+        Task::new(
+            "Show shell prompt",
+            "Displays the current PS1, PS2, PS3, and PS4 prompt variables.",
+            1,
+            script("echo 'PS1: $PS1'; echo 'PS2: $PS2'; echo 'PS3: $PS3'; echo 'PS4: $PS4'"),
+        ),
+        Task::new(
+            "Show environment variables",
+            "Lists all exported environment variables.",
+            1,
+            script("env | sort"),
+        ),
+        Task::new(
+            "Edit bash aliases",
+            "Opens ~/.bash_aliases in $EDITOR (created if missing).",
+            1,
+            script("touch \"$HOME/.bash_aliases\" && \"${EDITOR:-nano}\" \"$HOME/.bash_aliases\""),
+        ),
+        Task::new(
+            "Edit inputrc",
+            "Opens ~/.inputrc in $EDITOR (created if missing) for readline key bindings.",
+            1,
+            script("touch \"$HOME/.inputrc\" && \"${EDITOR:-nano}\" \"$HOME/.inputrc\""),
+        ),
+        Task::new(
+            "Edit profile",
+            "Opens ~/.profile in $EDITOR (created if missing).",
+            1,
+            script("touch \"$HOME/.profile\" && \"${EDITOR:-nano}\" \"$HOME/.profile\""),
+        ),
+        Task::new(
+            "Edit bash_logout",
+            "Opens ~/.bash_logout in $EDITOR (created if missing).",
+            1,
+            script("touch \"$HOME/.bash_logout\" && \"${EDITOR:-nano}\" \"$HOME/.bash_logout\""),
+        ),
+        Task::new(
+            "Show shell history",
+            "Shows the last 50 entries from ~/.bash_history.",
+            1,
+            script("if [ -f \"$HOME/.bash_history\" ]; then tail -50 \"$HOME/.bash_history\"; else echo 'No ~/.bash_history found.'; fi"),
+        ),
+        Task::new(
+            "Clear shell history",
+            "Clears the in-memory and on-disk bash history.",
+            1,
+            script("history -c 2>/dev/null; rm -f \"$HOME/.bash_history\"; touch \"$HOME/.bash_history\"; echo 'Shell history cleared.'"),
+        )
+        .destructive(),
+        Task::new(
+            "Backup bash config",
+            "Copies ~/.bashrc, ~/.bash_aliases, ~/.inputrc, ~/.profile, and ~/.bash_logout to ~/.local/state/bashbox/dotfiles-backup/.",
+            1,
+            script("mkdir -p \"$HOME/.local/state/bashbox/dotfiles-backup\"; for f in .bashrc .bash_aliases .inputrc .profile .bash_logout; do if [ -f \"$HOME/$f\" ]; then cp -f \"$HOME/$f\" \"$HOME/.local/state/bashbox/dotfiles-backup/$f\"; echo \"Backed up $f\"; fi; done; echo 'Backup complete in ~/.local/state/bashbox/dotfiles-backup/'"),
+        ),
+        Task::new(
+            "Restore bash config",
+            "Restores bash config files from ~/.local/state/bashbox/dotfiles-backup/ if they exist.",
+            1,
+            script("backup_dir=\"$HOME/.local/state/bashbox/dotfiles-backup\"; for f in .bashrc .bash_aliases .inputrc .profile .bash_logout; do if [ -f \"$backup_dir/$f\" ]; then cp -f \"$backup_dir/$f\" \"$HOME/$f\"; echo \"Restored $f\"; fi; done; echo 'Restore complete.'"),
+        ),
+        Task::new(
+            "Check shell startup time",
+            "Times how long bash takes to start up interactively.",
+            1,
+            script("start=$(date +%s%N); bash -ic 'exit' 2>/dev/null; end=$(date +%s%N); elapsed=$(( (end - start) / 1000000 )); echo \"Interactive bash startup: ${elapsed}ms\""),
+        ),
+        Task::new(
+            "Find broken symlinks in home",
+            "Finds dangling symlinks under your home directory.",
+            1,
+            script("find \"$HOME\" -maxdepth 4 -xtype l -print 2>/dev/null | head -60 || true"),
+        ),
+        Task::new(
+            "Install bash-completion",
+            "Installs bash-completion for tab-completion support.",
+            1,
+            script(pkg(pm, "bash-completion")),
+        )
+        .with_check(Check::Bin("bash-completion".to_string())),
+        Task::new(
             "Update system",
             "Upgrades all packages non-interactively via the detected package manager.",
             3,
-            script(&update_cmd(pm)),
+            script(update_cmd(pm)),
         )
         .destructive(),
         Task::new(
             "Clean package cache",
             "Removes orphaned packages and the download cache.",
             3,
-            script(&cleanup_cmd(pm)),
+            script(cleanup_cmd(pm)),
         )
         .destructive(),
         Task::new(
@@ -594,7 +2474,7 @@ pub fn build() -> Vec<Task> {
             "Install Nerd Fonts",
             "Downloads JetBrainsMono, FiraCode, CascadiaCode and Hack Nerd Fonts to ~/.local/share/fonts.",
             3,
-            script(&format!(
+            script(format!(
                 "for font in {}; do d=\"$HOME/.local/share/fonts/${{font}}NF\"; if [ -d \"$d\" ]; then continue; fi; echo \"Installing $font Nerd Font...\"; curl -fsSL -o \"/tmp/${{font}}.zip\" \"https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${{font}}.zip\" && unzip -oq \"/tmp/${{font}}.zip\" -d \"$d\"; rm -f \"/tmp/${{font}}.zip\"; done; if command -v fc-cache >/dev/null; then fc-cache -f; fi",
                 FONTS.join(" ")
             )),
@@ -620,6 +2500,103 @@ pub fn build() -> Vec<Task> {
             "Rebuilds the fontconfig cache after installing Nerd Fonts.",
             3,
             script("if command -v fc-cache >/dev/null 2>&1; then fc-cache -f; else echo 'fc-cache is not available.'; fi"),
+        ),
+        Task::new(
+            "Disk health (SMART)",
+            "Shows SMART disk health information for available drives.",
+            3,
+            script(r#"if command -v smartctl >/dev/null 2>&1; then $SUDO smartctl --scan 2>/dev/null | while read -r dev _; do echo "=== $dev ==="; $SUDO smartctl -H "$dev" 2>/dev/null; done; else echo 'smartctl is not installed (install smartmontools).'; fi"#),
+        )
+        .destructive(),
+        Task::new(
+            "Swap status",
+            "Shows swap space usage and configuration.",
+            3,
+            script("free -h 2>/dev/null | grep -i swap; echo; swapon --show 2>/dev/null || echo 'No swap devices found.'; echo; cat /proc/swaps 2>/dev/null || echo 'Cannot read /proc/swaps.'"),
+        ),
+        Task::new(
+            "Block devices",
+            "Lists block devices, partitions, and their mount points with lsblk.",
+            3,
+            script("if command -v lsblk >/dev/null 2>&1; then lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,UUID,MODEL; else echo 'lsblk is not installed (install util-linux).'; fi"),
+        ),
+        Task::new(
+            "Mounted filesystems",
+            "Shows currently mounted filesystems with options and types.",
+            3,
+            script("if command -v findmnt >/dev/null 2>&1; then findmnt -T / --target / 2>/dev/null || findmnt; else mount | column -t; fi"),
+        ),
+        Task::new(
+            "LVM status",
+            "Shows physical volumes, volume groups, and logical volumes if LVM is in use.",
+            3,
+            script("if command -v pvs >/dev/null 2>&1 || command -v vgs >/dev/null 2>&1 || command -v lvs >/dev/null 2>&1; then echo '--- Physical Volumes ---'; $SUDO pvs 2>/dev/null || echo 'No physical volumes.'; echo; echo '--- Volume Groups ---'; $SUDO vgs 2>/dev/null || echo 'No volume groups.'; echo; echo '--- Logical Volumes ---'; $SUDO lvs 2>/dev/null || echo 'No logical volumes.'; else echo 'LVM tools are not installed (install lvm2).'; fi"),
+        ),
+        Task::new(
+            "Systemd services",
+            "Lists all systemd units and their current state.",
+            3,
+            script("if command -v systemctl >/dev/null 2>&1; then systemctl list-units --type=service --all --no-pager 2>&1 | head -60; else echo 'systemd is not available here.'; fi"),
+        ),
+        Task::new(
+            "System load",
+            "Shows current load averages and the top CPU-consuming processes.",
+            3,
+            script("uptime; echo; ps -eo pid,ppid,user,%cpu,%mem,comm --sort=-%cpu 2>/dev/null | head -11 || ps aux | head -11"),
+        ),
+        Task::new(
+            "Kernel modules",
+            "Lists currently loaded kernel modules with lsmod.",
+            3,
+            script("if command -v lsmod >/dev/null 2>&1; then lsmod; else echo 'lsmod is not installed (install kmod).'; fi"),
+        ),
+        Task::new(
+            "Kernel ring buffer",
+            "Shows recent dmesg output (kernel log messages).",
+            3,
+            script("if command -v dmesg >/dev/null 2>&1; then $SUDO dmesg --level=err,warn 2>/dev/null | tail -40 || dmesg | tail -40; else echo 'dmesg is not installed (install util-linux).'; fi"),
+        ),
+        Task::new(
+            "File system types",
+            "Lists mounted filesystem types and their counts.",
+            3,
+            script("if command -v findmnt >/dev/null 2>&1; then findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS --noheadings | awk '{print $3}' | sort | uniq -c | sort -rn; else cat /proc/filesystems; fi"),
+        ),
+        Task::new(
+            "Inode usage",
+            "Shows inode usage on mounted filesystems.",
+            3,
+            script("df -i -h 2>/dev/null || echo 'df is not available.'"),
+        ),
+        Task::new(
+            "Users and groups",
+            "Lists local system users and groups with their primary group IDs.",
+            3,
+            script("echo '--- Users ---'; cut -d: -f1,3,4 /etc/passwd 2>/dev/null | column -t -s:; echo; echo '--- Groups ---'; cut -d: -f1,3 /etc/group 2>/dev/null | column -t -s:"),
+        ),
+        Task::new(
+            "Cron jobs",
+            "Lists system and user cron jobs.",
+            3,
+            script("echo '--- System crontab ---'; [ -r /etc/crontab ] && cat /etc/crontab || echo 'No /etc/crontab.'; echo; echo '--- Cron directories ---'; ls -la /etc/cron.d/ /etc/cron.daily/ /etc/cron.hourly/ /etc/cron.weekly/ /etc/cron.monthly/ 2>/dev/null; echo; echo '--- User crontabs ---'; for u in $(cut -d: -f1 /etc/passwd 2>/dev/null); do crontab -u \"$u\" -l 2>/dev/null && echo \"(user: $u)\"; done 2>/dev/null || echo 'Cannot read user crontabs.'"),
+        ),
+        Task::new(
+            "Systemd timers",
+            "Lists all systemd timers and their next-elapse times.",
+            3,
+            script("if command -v systemctl >/dev/null 2>&1; then systemctl list-timers --all --no-pager 2>&1 | head -40; else echo 'systemd is not available here.'; fi"),
+        ),
+        Task::new(
+            "Package count",
+            "Counts installed packages across apt, dnf, pacman, and zypper.",
+            3,
+            script("case \"$PM\" in apt) dpkg -l 2>/dev/null | grep -c '^ii' || echo '0';; dnf) dnf list installed 2>/dev/null | tail -n +2 | wc -l;; pacman) pacman -Q 2>/dev/null | wc -l;; zypper) zypper se --installed-only 2>/dev/null | tail -n +2 | wc -l;; *) echo 'Unknown package manager.';; esac"),
+        ),
+        Task::new(
+            "Boot time",
+            "Shows when the system was last booted and current uptime.",
+            3,
+            script("if command -v uptime >/dev/null 2>&1; then uptime -s 2>/dev/null || who -b 2>/dev/null; fi; uptime -p 2>/dev/null || uptime; echo; echo 'Current time: $(date)'"),
         ),
         Task::new(
             "Disk usage",
@@ -663,7 +2640,7 @@ pub fn build() -> Vec<Task> {
             "Check for updates",
             "Compares the installed version with the latest GitHub release.",
             4,
-            script(&format!(
+            script(format!(
                 "latest=$(curl -fsSL --max-time 10 https://api.github.com/repos/hollali/bashbox/releases/latest 2>/dev/null | sed -n 's/.*\"tag_name\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -n1); echo \"Installed: v{}\"; if [ -z \"$latest\" ]; then echo 'Latest: could not check (offline or no releases)'; elif [ \"v{}\" = \"$latest\" ]; then echo \"Latest: $latest (up to date)\"; else echo \"Latest: $latest (update available)\"; fi",
                 env!("CARGO_PKG_VERSION"),
                 env!("CARGO_PKG_VERSION")
@@ -808,45 +2785,68 @@ pub fn build() -> Vec<Task> {
         .with_prompt("URL")
         .with_timeout(20),
         Task::new(
+            "Ping host",
+            "Sends ICMP echo requests to a host and shows round-trip times.",
+            4,
+            script(r#"if command -v ping >/dev/null 2>&1; then ping -c 4 {} 2>&1; else echo 'ping is not installed.'; fi"#),
+        )
+        .with_prompt("Host to ping")
+        .with_timeout(15),
+        Task::new(
+            "Traceroute",
+            "Traces the route packets take to reach a network host.",
+            4,
+            script(r#"if command -v traceroute >/dev/null 2>&1; then traceroute {} 2>&1; elif command -v tracepath >/dev/null 2>&1; then tracepath {} 2>&1; else echo 'Neither traceroute nor tracepath is installed.'; fi"#),
+        )
+        .with_prompt("Host to trace")
+        .with_timeout(20),
+        Task::new(
+            "Speed test",
+            "Measures download/upload speed and latency using speedtest-cli.",
+            4,
+            script("if command -v speedtest >/dev/null 2>&1; then speedtest --simple; elif command -v speedtest-cli >/dev/null 2>&1; then speedtest-cli --simple; else echo 'speedtest-cli is not installed (run sudo apt-get install speedtest-cli or equivalent).'; fi"),
+        )
+        .with_timeout(60),
+        Task::new(
             "Install lazygit",
             "Installs lazygit, a terminal UI for git.",
             5,
-            script(&pkg(pm, "lazygit")),
+            script(pkg(pm, "lazygit")),
         )
         .with_check(Check::Bin("lazygit".to_string())),
         Task::new(
             "Install direnv",
             "Installs direnv to load per-project environment variables automatically.",
             5,
-            script(&pkg(pm, "direnv")),
+            script(pkg(pm, "direnv")),
         )
         .with_check(Check::Bin("direnv".to_string())),
         Task::new(
             "Install just",
             "Installs just, a command runner for project recipes.",
             5,
-            script(&pkg(pm, "just")),
+            script(pkg(pm, "just")),
         )
         .with_check(Check::Bin("just".to_string())),
         Task::new(
             "Install delta",
             "Installs git-delta for readable side-by-side git diffs.",
             5,
-            script(&pkg_alias(pm, "git-delta", "git-delta", "git-delta", "git-delta")),
+            script(pkg_alias(pm, "git-delta", "git-delta", "git-delta", "git-delta")),
         )
         .with_any_check(&["delta", "git-delta"]),
         Task::new(
             "Install hyperfine",
             "Installs hyperfine for benchmarking command-line tools.",
             5,
-            script(&pkg(pm, "hyperfine")),
+            script(pkg(pm, "hyperfine")),
         )
         .with_check(Check::Bin("hyperfine".to_string())),
         Task::new(
             "Install mkcert",
             "Installs mkcert for locally trusted development certificates.",
             5,
-            script(&pkg(pm, "mkcert")),
+            script(pkg(pm, "mkcert")),
         )
         .with_check(Check::Bin("mkcert".to_string())),
         Task::new(
@@ -860,21 +2860,21 @@ pub fn build() -> Vec<Task> {
             "Install pre-commit",
             "Installs pre-commit for managing git hooks.",
             5,
-            script(&pkg(pm, "pre-commit")),
+            script(pkg(pm, "pre-commit")),
         )
         .with_check(Check::Bin("pre-commit".to_string())),
         Task::new(
             "Install actionlint",
             "Installs actionlint for validating GitHub Actions workflows.",
             5,
-            script(&pkg(pm, "actionlint")),
+            script(pkg(pm, "actionlint")),
         )
         .with_check(Check::Bin("actionlint".to_string())),
         Task::new(
             "Install glab",
             "Installs the GitLab CLI.",
             5,
-            script(&pkg(pm, "glab")),
+            script(pkg(pm, "glab")),
         )
         .with_check(Check::Bin("glab".to_string())),
         Task::new(
@@ -939,7 +2939,7 @@ pub fn build() -> Vec<Task> {
             "Install Azure CLI",
             "Installs the Azure CLI with the official installer on apt and the package manager elsewhere.",
             6,
-            script(&if pm == "apt" {
+            script(if pm == "apt" {
                 "command -v az >/dev/null 2>&1 || curl -sL https://aka.ms/InstallAzureCLIDeb | $SUDO bash".to_string()
             } else {
                 format!("command -v az >/dev/null 2>&1 || {}", pkg(pm, "azure-cli"))
@@ -964,14 +2964,14 @@ pub fn build() -> Vec<Task> {
             "Install k9s",
             "Installs k9s, a terminal UI for Kubernetes.",
             6,
-            script(&pkg(pm, "k9s")),
+            script(pkg(pm, "k9s")),
         )
         .with_check(Check::Bin("k9s".to_string())),
         Task::new(
             "Install kubectx",
             "Installs kubectx and kubens for switching Kubernetes contexts and namespaces.",
             6,
-            script(&pkg(pm, "kubectx")),
+            script(pkg(pm, "kubectx")),
         )
         .with_any_check(&["kubectx", "kubens"]),
         Task::new(
@@ -1028,35 +3028,35 @@ pub fn build() -> Vec<Task> {
             "Install nmap",
             "Installs nmap for network discovery and port scanning.",
             7,
-            script(&pkg(pm, "nmap")),
+            script(pkg(pm, "nmap")),
         )
         .with_check(Check::Bin("nmap".to_string())),
         Task::new(
             "Install tcpdump",
             "Installs tcpdump for packet capture analysis.",
             7,
-            script(&pkg(pm, "tcpdump")),
+            script(pkg(pm, "tcpdump")),
         )
         .with_check(Check::Bin("tcpdump".to_string())),
         Task::new(
             "Install whois",
             "Installs the whois client for domain and IP lookups.",
             7,
-            script(&pkg(pm, "whois")),
+            script(pkg(pm, "whois")),
         )
         .with_check(Check::Bin("whois".to_string())),
         Task::new(
             "Install DNS tools",
             "Installs dig/host/nslookup for DNS troubleshooting.",
             7,
-            script(&pkg_alias(pm, "dnsutils", "bind-utils", "bind", "bind-utils")),
+            script(pkg_alias(pm, "dnsutils", "bind-utils", "bind", "bind-utils")),
         )
         .with_any_check(&["dig", "host", "drill", "nslookup"]),
         Task::new(
             "Install netcat",
             "Installs a netcat implementation for quick network tests.",
             7,
-            script(&pkg_alias(
+            script(pkg_alias(
                 pm,
                 "netcat-openbsd",
                 "nmap-ncat",
@@ -1069,28 +3069,28 @@ pub fn build() -> Vec<Task> {
             "Install GnuPG",
             "Installs GnuPG for signing and encrypting files.",
             7,
-            script(&pkg_alias(pm, "gnupg", "gnupg2", "gnupg", "gpg2")),
+            script(pkg_alias(pm, "gnupg", "gnupg2", "gnupg", "gpg2")),
         )
         .with_check(Check::Bin("gpg".to_string())),
         Task::new(
             "Install age",
             "Installs age, a simple modern file-encryption tool.",
             7,
-            script(&pkg(pm, "age")),
+            script(pkg(pm, "age")),
         )
         .with_check(Check::Bin("age".to_string())),
         Task::new(
             "Install pass",
             "Installs pass, the standard Unix password manager.",
             7,
-            script(&pkg_alias(pm, "pass", "pass", "pass", "password-store")),
+            script(pkg_alias(pm, "pass", "pass", "pass", "password-store")),
         )
         .with_check(Check::Bin("pass".to_string())),
         Task::new(
             "Install Lynis",
             "Installs Lynis for local security auditing and hardening checks.",
             7,
-            script(&pkg(pm, "lynis")),
+            script(pkg(pm, "lynis")),
         )
         .with_check(Check::Bin("lynis".to_string())),
         Task::new(
@@ -1177,42 +3177,42 @@ pub fn build() -> Vec<Task> {
             "Install Ansible",
             "Installs Ansible for configuration management and automation.",
             8,
-            script(&pkg(pm, "ansible")),
+            script(pkg(pm, "ansible")),
         )
         .with_check(Check::Bin("ansible".to_string())),
         Task::new(
             "Install ansible-lint",
             "Installs ansible-lint for validating playbooks and roles.",
             8,
-            script(&pkg(pm, "ansible-lint")),
+            script(pkg(pm, "ansible-lint")),
         )
         .with_check(Check::Bin("ansible-lint".to_string())),
         Task::new(
             "Install Packer",
             "Installs HashiCorp Packer for building machine images.",
             8,
-            script(&pkg(pm, "packer")),
+            script(pkg(pm, "packer")),
         )
         .with_check(Check::Bin("packer".to_string())),
         Task::new(
             "Install Podman",
             "Installs Podman for daemonless container workflows.",
             8,
-            script(&pkg(pm, "podman")),
+            script(pkg(pm, "podman")),
         )
         .with_check(Check::Bin("podman".to_string())),
         Task::new(
             "Install kind",
             "Installs kind for running local Kubernetes clusters in Docker.",
             8,
-            script(&pkg(pm, "kind")),
+            script(pkg(pm, "kind")),
         )
         .with_check(Check::Bin("kind".to_string())),
         Task::new(
             "Install minikube",
             "Installs minikube for local Kubernetes development.",
             8,
-            script(&pkg(pm, "minikube")),
+            script(pkg(pm, "minikube")),
         )
         .with_check(Check::Bin("minikube".to_string())),
         Task::new(
@@ -1422,7 +3422,7 @@ fn parse_custom_tasks(text: &str) -> Result<Vec<Task>, String> {
             name: entry.name,
             desc,
             tab,
-            action: script(&command),
+            action: script(command),
             check,
             prompt,
             timeout,
