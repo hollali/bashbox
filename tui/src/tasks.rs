@@ -309,7 +309,7 @@ fn chrome_install_cmd(pm: &str) -> String {
             "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
-            && $SUDO dnf localinstall -y ./google-chrome-stable_current_x86_64.rpm \
+            && $SUDO dnf install -y ./google-chrome-stable_current_x86_64.rpm \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"".to_string()
         }
@@ -366,7 +366,7 @@ fn vscode_install_cmd(pm: &str) -> String {
             "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q https://go.microsoft.com/fwlink/?LinkID=760867 -O code-stable_x86_64.rpm \
-            && $SUDO dnf localinstall -y ./code-stable_x86_64.rpm \
+            && $SUDO dnf install -y ./code-stable_x86_64.rpm \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"".to_string()
         }
@@ -491,7 +491,7 @@ fn obsidian_install_cmd(pm: &str) -> String {
             "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q https://github.com/obsidianmd/obsidian-releases/releases/latest/download/obsidian_amd64.deb -O obsidian.deb \
-            && $SUDO apt-get install -y ./obsidian.deb 2>/dev/null || $SUDO dnf localinstall -y ./obsidian.deb 2>/dev/null || $SUDO zypper --non-interactive install ./obsidian.deb \
+            && $SUDO apt-get install -y ./obsidian.deb 2>/dev/null || $SUDO dnf install -y ./obsidian.deb 2>/dev/null || $SUDO zypper --non-interactive install ./obsidian.deb \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"".to_string()
         }
@@ -562,7 +562,7 @@ fn dbeaver_install_cmd(pm: &str) -> String {
             "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q https://dbeaver.io/files/dbeaver-ce-latest-x86_64.rpm -O dbeaver.rpm \
-            && $SUDO dnf localinstall -y ./dbeaver.rpm 2>/dev/null || $SUDO zypper --non-interactive install ./dbeaver.rpm \
+            && $SUDO dnf install -y ./dbeaver.rpm 2>/dev/null || $SUDO zypper --non-interactive install ./dbeaver.rpm \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"".to_string()
         }
@@ -656,7 +656,7 @@ fn edge_install_cmd(_pm: &str) -> String {
     "tmpdir=$(mktemp -d) \
     && cd \"$tmpdir\" \
     && wget -q https://go.microsoft.com/fwlink/?linkid=2212542 -O edge.deb \
-    && $SUDO apt-get install -y ./edge.deb 2>/dev/null || $SUDO dnf localinstall -y ./edge.deb 2>/dev/null || $SUDO zypper --non-interactive install ./edge.deb \
+    && $SUDO apt-get install -y ./edge.deb 2>/dev/null || $SUDO dnf install -y ./edge.deb 2>/dev/null || $SUDO zypper --non-interactive install ./edge.deb \
     && cd - >/dev/null \
     && rm -rf \"$tmpdir\"".to_string()
 }
@@ -691,7 +691,7 @@ fn bitwarden_install_cmd(_pm: &str) -> String {
     "tmpdir=$(mktemp -d) \
     && cd \"$tmpdir\" \
     && wget -q https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb -O bitwarden.deb \
-    && $SUDO apt-get install -y ./bitwarden.deb 2>/dev/null || $SUDO dnf localinstall -y ./bitwarden.deb 2>/dev/null || $SUDO zypper --non-interactive install ./bitwarden.deb \
+    && $SUDO apt-get install -y ./bitwarden.deb 2>/dev/null || $SUDO dnf install -y ./bitwarden.deb 2>/dev/null || $SUDO zypper --non-interactive install ./bitwarden.deb \
     && cd - >/dev/null \
     && rm -rf \"$tmpdir\"".to_string()
 }
@@ -793,7 +793,7 @@ fn mongodbcompass_install_cmd(_pm: &str) -> String {
     "tmpdir=$(mktemp -d) \
     && cd \"$tmpdir\" \
     && wget -q https://downloads.mongodb.com/compass/mongodb-compass-latest.x86_64.deb -O mongodb-compass.deb \
-    && $SUDO apt-get install -y ./mongodb-compass.deb 2>/dev/null || $SUDO dnf localinstall -y ./mongodb-compass.deb 2>/dev/null || $SUDO zypper --non-interactive install ./mongodb-compass.deb \
+    && $SUDO apt-get install -y ./mongodb-compass.deb 2>/dev/null || $SUDO dnf install -y ./mongodb-compass.deb 2>/dev/null || $SUDO zypper --non-interactive install ./mongodb-compass.deb \
     && cd - >/dev/null \
     && rm -rf \"$tmpdir\"".to_string()
 }
@@ -1341,7 +1341,7 @@ pub fn build() -> Vec<Task> {
                     "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q {} -O zoom.pkg \
-            && $SUDO apt-get install -y ./zoom.pkg 2>/dev/null || $SUDO dnf localinstall -y ./zoom.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./zoom.pkg \
+            && $SUDO apt-get install -y ./zoom.pkg 2>/dev/null || $SUDO dnf install -y ./zoom.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./zoom.pkg \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"",
                     zoom_url
@@ -1370,7 +1370,7 @@ pub fn build() -> Vec<Task> {
                     "tmpdir=$(mktemp -d) \
             && cd \"$tmpdir\" \
             && wget -q {} -O slack.pkg \
-            && $SUDO apt-get install -y ./slack.pkg 2>/dev/null || $SUDO dnf localinstall -y ./slack.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./slack.pkg \
+            && $SUDO apt-get install -y ./slack.pkg 2>/dev/null || $SUDO dnf install -y ./slack.pkg 2>/dev/null || $SUDO zypper --non-interactive install ./slack.pkg \
             && cd - >/dev/null \
             && rm -rf \"$tmpdir\"",
                     slack_url
